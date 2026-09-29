@@ -1,0 +1,14 @@
+*.exe
+*.dll
+*.pdb
+*.obj
+*.log
+*.dmp
+*.zip
+*.user
+build-vs*/
+packages/
+profile/
+user_settings/
+logs/
+__pycache__/

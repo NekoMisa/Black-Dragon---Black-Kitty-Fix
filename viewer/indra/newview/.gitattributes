@@ -1,0 +1,3 @@
+# Keep these upstream Windows inputs byte for byte, including their encoding.
+installers/windows/FILES_ARE_UNICODE_UTF-16LE.txt -text -eol
+windows.manifest -text -eol

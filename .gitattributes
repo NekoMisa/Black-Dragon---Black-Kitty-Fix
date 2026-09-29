@@ -1,0 +1,3 @@
+# Preserve the upstream Windows files byte for byte, including their encoding.
+viewer/indra/newview/installers/windows/FILES_ARE_UNICODE_UTF-16LE.txt -text
+viewer/indra/newview/windows.manifest -text

@@ -1,0 +1,4936 @@
+diff --git a/autobuild.xml b/autobuild.xml
+index 4f80779..66a0c57 100644
+--- a/autobuild.xml
++++ b/autobuild.xml
+@@ -2113,11 +2113,11 @@ Copyright (c) 2012, 2014, 2015, 2016 nghttp2 contributors</string>
+             <key>archive</key>
+             <map>
+               <key>hash</key>
+-              <string>07cff9eafaecfbe6f44e2a05b3465cae</string>
++              <string>d88961ba47ef6e616c293450c0bd77f4</string>
+               <key>hash_algorithm</key>
+               <string>md5</string>
+               <key>url</key>
+-              <string>https://pkg.alchemyviewer.org/repository/autobuild-external/tmpanext/openjpeg-1.5.1.200900057-windows64-200900057.tar.bz2</string>
++              <string>file:///C:/BD-AMD-Test/openjpeg-2.5.4-windows64-57702.tar.bz2</string>
+             </map>
+             <key>name</key>
+             <string>windows64</string>
+@@ -2130,7 +2130,7 @@ Copyright (c) 2012, 2014, 2015, 2016 nghttp2 contributors</string>
+         <key>copyright</key>
+         <string>Copyright (c) 2002-2007, Communications and Remote Sensing Laboratory, Universite catholique de Louvain (UCL), Belgium; Copyright (c) 2002-2007, Professor Benoit Macq; Copyright (c) 2001-2003, David Janssens; Copyright (c) 2002-2003, Yannick Verschueren; Copyright (c) 2003-2007, Francois-Olivier Devaux and Antonin Descampe; Copyright (c) 2005, Herve Drolon, FreeImage Team; Copyright (c) 2006-2007, Parvatha Elangovan; Copyright (c) 2008, Jerome Fimes, Communications &amp; Systemes &lt;jerome.fimes@c-s.fr&gt;; Copyright (c) 2010-2011, Kaori Hagihara; Copyright (c) 2011-2012, Centre National d'Etudes Spatiales (CNES), France; Copyright (c) 2012, CS Systemes d'Information, France;</string>
+         <key>version</key>
+-        <string>1.5.1.200900057</string>
++        <string>2.5.4</string>
+         <key>name</key>
+         <string>openjpeg</string>
+         <key>description</key>
+diff --git a/indra/cmake/BuildVersion.cmake b/indra/cmake/BuildVersion.cmake
+index aa151ba..8f2276c 100644
+--- a/indra/cmake/BuildVersion.cmake
++++ b/indra/cmake/BuildVersion.cmake
+@@ -5,7 +5,7 @@ if (NOT DEFINED VIEWER_SHORT_VERSION) # will be true in indra/, false in indra/n
+     set(VIEWER_VERSION_BASE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/newview/VIEWER_VERSION.txt")
+ 
+     if ( EXISTS ${VIEWER_VERSION_BASE_FILE} )
+-        file(STRINGS ${VIEWER_VERSION_BASE_FILE} VIEWER_SHORT_VERSION REGEX "^[0-9]+\\.[0-9]+\\.[0-9]+")
++        file(STRINGS ${VIEWER_VERSION_BASE_FILE} VIEWER_SHORT_VERSION LIMIT_COUNT 1 REGEX "^[0-9]+\\.[0-9]+\\.[0-9]+")
+         string(REGEX REPLACE "^([0-9]+)\\.[0-9]+\\.[0-9]+" "\\1" VIEWER_VERSION_MAJOR ${VIEWER_SHORT_VERSION})
+         string(REGEX REPLACE "^[0-9]+\\.([0-9]+)\\.[0-9]+" "\\1" VIEWER_VERSION_MINOR ${VIEWER_SHORT_VERSION})
+         string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+)" "\\1" VIEWER_VERSION_PATCH ${VIEWER_SHORT_VERSION})
+diff --git a/indra/cmake/Copy3rdPartyLibs.cmake b/indra/cmake/Copy3rdPartyLibs.cmake
+index eb5167a..e3a6c51 100644
+--- a/indra/cmake/Copy3rdPartyLibs.cmake
++++ b/indra/cmake/Copy3rdPartyLibs.cmake
+@@ -56,7 +56,7 @@ if(WINDOWS)
+ 
+     set(release_src_dir "${ARCH_PREBUILT_DIRS_RELEASE}")
+     set(release_files
+-        openjpeg.dll
++        openjp2.dll
+         )
+ 
+     # Filenames are different for 32/64 bit BugSplat file and we don't
+diff --git a/indra/cmake/NVAPI.cmake b/indra/cmake/NVAPI.cmake
+index ff5a542..89edffe 100644
+--- a/indra/cmake/NVAPI.cmake
++++ b/indra/cmake/NVAPI.cmake
+@@ -6,6 +6,7 @@ set(NVAPI ON CACHE BOOL "Use NVAPI.")
+ if (NVAPI)
+   if (WINDOWS)
+     add_library( ll::nvapi INTERFACE IMPORTED )
++    target_compile_definitions(ll::nvapi INTERFACE LL_NVAPI=1)
+     target_link_libraries( ll::nvapi INTERFACE nvapi)
+     use_prebuilt_binary(nvapi)
+   endif (WINDOWS)
+diff --git a/indra/cmake/OpenJPEG.cmake b/indra/cmake/OpenJPEG.cmake
+index 5aebf3c..5a6486d 100644
+--- a/indra/cmake/OpenJPEG.cmake
++++ b/indra/cmake/OpenJPEG.cmake
+@@ -12,8 +12,8 @@ else (USESYSTEMLIBS)
+   if(WINDOWS)
+     # Windows has differently named release and debug openjpeg(d) libs.
+     set(OPENJPEG_LIBRARIES 
+-        debug openjpegd
+-        optimized openjpeg)
++        debug openjp2
++        optimized openjp2)
+   else(WINDOWS)
+     set(OPENJPEG_LIBRARIES openjpeg)
+   endif(WINDOWS)
+diff --git a/indra/lib/python/indra/util/llmanifest.py b/indra/lib/python/indra/util/llmanifest.py
+index 1bd65eb..c4c9ec8 100755
+--- a/indra/lib/python/indra/util/llmanifest.py
++++ b/indra/lib/python/indra/util/llmanifest.py
+@@ -801,7 +801,7 @@ class LLManifest(object, metaclass=LLManifestRegistry):
+         while dst_temp.count("*") > 0:
+             dst_temp = dst_temp.replace('*', '\g<' + str(i) + '>', 1)
+             i = i+1
+-        return re.compile(src_re), dst_temp
++        return re.compile(src_re, re.IGNORECASE if os.name == "nt" else 0), dst_temp
+ 
+     def check_file_exists(self, path):
+         if not os.path.exists(path) and not os.path.islink(path):
+diff --git a/indra/llfilesystem/lldir.cpp b/indra/llfilesystem/lldir.cpp
+index 7e5b110..b357f08 100644
+--- a/indra/llfilesystem/lldir.cpp
++++ b/indra/llfilesystem/lldir.cpp
+@@ -390,7 +390,7 @@ std::string LLDir::buildSLOSCacheDir() const
+ 	}
+ 	else
+ 	{
+-		res = add(getOSCacheDir(), "Black Dragon");
++		res = add(getOSCacheDir(), "Black Dragon Black Kitty Fix");
+ 	}
+ 	return res;
+ }
+diff --git a/indra/llimagej2coj/llimagej2coj.cpp b/indra/llimagej2coj/llimagej2coj.cpp
+index 00ee5c5..4ef6612 100644
+--- a/indra/llimagej2coj/llimagej2coj.cpp
++++ b/indra/llimagej2coj/llimagej2coj.cpp
+@@ -27,12 +27,9 @@
+ #include "linden_common.h"
+ #include "llimagej2coj.h"
+ 
+- // this is defined so that we get static linking.
++// this is defined so that we get static linking.
+ #include "openjpeg.h"
+ 
+-#include "lltimer.h"
+-//#include "llmemory.h"
+-
+ // Factory function: see declaration in llimagej2c.cpp
+ LLImageJ2CImpl* fallbackCreateLLImageJ2CImpl()
+ {
+@@ -49,6 +46,7 @@ std::string LLImageJ2COJ::getEngineInfo() const
+ #endif
+ }
+ 
++#if WANT_VERBOSE_OPJ_SPAM
+ // Return string from message, eliminating final \n if present
+ static std::string chomp(const char* msg)
+ {
+@@ -61,30 +59,37 @@ static std::string chomp(const char* msg)
+         {
+             message.resize(last);
+         }
+-    }
++}
+     return message;
+ }
++#endif
+ 
+ /**
+ sample error callback expecting a LLFILE* client object
+ */
+ void error_callback(const char* msg, void*)
+ {
+-    LL_DEBUGS() << "LLImageJ2COJ: " << chomp(msg) << LL_ENDL;
++#if WANT_VERBOSE_OPJ_SPAM
++    LL_WARNS() << "LLImageJ2COJ: " << chomp(msg) << LL_ENDL;
++#endif
+ }
+ /**
+ sample warning callback expecting a LLFILE* client object
+ */
+ void warning_callback(const char* msg, void*)
+ {
+-    LL_DEBUGS() << "LLImageJ2COJ: " << chomp(msg) << LL_ENDL;
++#if WANT_VERBOSE_OPJ_SPAM
++    LL_WARNS() << "LLImageJ2COJ: " << chomp(msg) << LL_ENDL;
++#endif
+ }
+ /**
+ sample debug callback expecting no client object
+ */
+ void info_callback(const char* msg, void*)
+ {
+-    LL_DEBUGS() << "LLImageJ2COJ: " << chomp(msg) << LL_ENDL;
++#if WANT_VERBOSE_OPJ_SPAM
++    LL_INFOS() << "LLImageJ2COJ: " << chomp(msg) << LL_ENDL;
++#endif
+ }
+ 
+ // Divide a by 2 to the power of b and round upwards
+@@ -93,464 +98,826 @@ int ceildivpow2(int a, int b)
+     return (a + (1 << b) - 1) >> b;
+ }
+ 
+-
+-LLImageJ2COJ::LLImageJ2COJ()
+-    : LLImageJ2CImpl()
++class JPEG2KBase
+ {
+-}
++public:
++    JPEG2KBase() = default;
+ 
++    U8*        buffer = nullptr;
++    OPJ_SIZE_T size = 0;
++    OPJ_OFF_T  offset = 0;
++};
+ 
+-LLImageJ2COJ::~LLImageJ2COJ()
++static OPJ_SIZE_T opj_read(void * buffer, OPJ_SIZE_T bytes, void* user_data)
+ {
+-}
++    llassert(user_data && buffer);
+ 
+-bool LLImageJ2COJ::initDecode(LLImageJ2C& base, LLImageRaw& raw_image, int discard_level, int* region)
+-{
+-    // No specific implementation for this method in the OpenJpeg case
+-    return false;
++    JPEG2KBase* jpeg_codec = static_cast<JPEG2KBase*>(user_data);
++
++    if (jpeg_codec->offset < 0 || static_cast<OPJ_SIZE_T>(jpeg_codec->offset) >= jpeg_codec->size)
++    {
++        jpeg_codec->offset = jpeg_codec->size;
++        return static_cast<OPJ_SIZE_T>(-1); // Indicate EOF
++    }
++
++    OPJ_SIZE_T remainder = jpeg_codec->size - static_cast<OPJ_SIZE_T>(jpeg_codec->offset);
++    OPJ_SIZE_T to_read = (bytes < remainder) ? bytes : remainder;
++
++    memcpy(buffer, jpeg_codec->buffer + jpeg_codec->offset, to_read);
++    jpeg_codec->offset += to_read;
++
++    return to_read;
+ }
+ 
+-bool LLImageJ2COJ::initEncode(LLImageJ2C& base, LLImageRaw& raw_image, int blocks_size, int precincts_size, int levels)
++static OPJ_SIZE_T opj_write(void * buffer, OPJ_SIZE_T bytes, void* user_data)
+ {
+-    // No specific implementation for this method in the OpenJpeg case
+-    return false;
++    llassert(user_data && buffer);
++
++    JPEG2KBase* jpeg_codec = static_cast<JPEG2KBase*>(user_data);
++    OPJ_OFF_T required_offset = jpeg_codec->offset + static_cast<OPJ_OFF_T>(bytes);
++
++    // Overflow check
++    if (required_offset < jpeg_codec->offset)
++        return 0; // Overflow detected
++
++    // Resize if needed (exponential growth)
++    if (required_offset > static_cast<OPJ_OFF_T>(jpeg_codec->size))
++    {
++        OPJ_SIZE_T new_size = jpeg_codec->size ? jpeg_codec->size : 1024;
++        while (required_offset > static_cast<OPJ_OFF_T>(new_size))
++            new_size *= 2;
++
++        const OPJ_SIZE_T MAX_BUFFER_SIZE = 512 * 1024 * 1024; // 512 MB, increase if needed
++        if (new_size > MAX_BUFFER_SIZE) return 0;
++
++        U8* new_buffer = (U8*)ll_aligned_malloc_16(new_size);
++        if (!new_buffer) return 0; // Allocation failed
++
++        if (jpeg_codec->offset > 0)
++            memcpy(new_buffer, jpeg_codec->buffer, static_cast<size_t>(jpeg_codec->offset));
++
++        ll_aligned_free_16(jpeg_codec->buffer);
++        jpeg_codec->buffer = new_buffer;
++        jpeg_codec->size = new_size;
++    }
++
++    memcpy(jpeg_codec->buffer + jpeg_codec->offset, buffer, static_cast<size_t>(bytes));
++    jpeg_codec->offset = required_offset;
++    return bytes;
+ }
+ 
+-bool LLImageJ2COJ::decodeImpl(LLImageJ2C& base, LLImageRaw& raw_image, F32 decode_time, S32 first_channel, S32 max_channel_count)
++static OPJ_OFF_T opj_skip(OPJ_OFF_T bytes, void* user_data)
+ {
+-    //
+-    // FIXME: Get the comment field out of the texture
+-    //
++    llassert(user_data);
++    JPEG2KBase* jpeg_codec = static_cast<JPEG2KBase*>(user_data);
+ 
+-    LLTimer decode_timer;
++    OPJ_OFF_T new_offset = jpeg_codec->offset + bytes;
+ 
+-    opj_dparameters_t parameters;	/* decompression parameters */
+-    opj_event_mgr_t event_mgr = { };		/* event manager */
+-    opj_image_t* image = nullptr;
+-
+-    opj_dinfo_t* dinfo = nullptr;	/* handle to a decompressor */
+-    opj_cio_t* cio = nullptr;
++    if (new_offset < 0 || new_offset > static_cast<OPJ_OFF_T>(jpeg_codec->size))
++    {
++        // Clamp and indicate EOF or error
++        jpeg_codec->offset = llclamp<OPJ_OFF_T>(new_offset, 0, static_cast<OPJ_OFF_T>(jpeg_codec->size));
++        return (OPJ_OFF_T)-1;
++    }
+ 
++    jpeg_codec->offset = new_offset;
++    return bytes;
++}
+ 
+-    /* configure the event callbacks (not required) */
+-    event_mgr.error_handler = error_callback;
+-    event_mgr.warning_handler = warning_callback;
+-    event_mgr.info_handler = info_callback;
++static OPJ_BOOL opj_seek(OPJ_OFF_T offset, void * user_data)
++{
++    llassert(user_data);
++    JPEG2KBase* jpeg_codec = static_cast<JPEG2KBase*>(user_data);
+ 
+-    /* set decoding parameters to default values */
+-    opj_set_default_decoder_parameters(&parameters);
++    if (offset < 0 || offset > static_cast<OPJ_OFF_T>(jpeg_codec->size))
++        return OPJ_FALSE;
+ 
+-    parameters.cp_reduce = base.getRawDiscardLevel();
++    jpeg_codec->offset = offset;
++    return OPJ_TRUE;
++}
+ 
+-    /* decode the code-stream */
+-    /* ---------------------- */
++static void opj_free_user_data(void * user_data)
++{
++    llassert(user_data);
+ 
+-    /* JPEG-2000 codestream */
++    JPEG2KBase* jpeg_codec = static_cast<JPEG2KBase*>(user_data);
++    // Don't free, data is managed externally
++    jpeg_codec->buffer = nullptr;
++    jpeg_codec->size = 0;
++    jpeg_codec->offset = 0;
++}
+ 
+-    /* get a decoder handle */
+-    dinfo = opj_create_decompress(CODEC_J2K);
++static void opj_free_user_data_write(void * user_data)
++{
++    llassert(user_data);
+ 
+-    /* catch events using our callbacks and give a local context */
+-    opj_set_event_mgr((opj_common_ptr)dinfo, &event_mgr, stderr);
++    JPEG2KBase* jpeg_codec = static_cast<JPEG2KBase*>(user_data);
++    // Free, data was allocated here
++    if (jpeg_codec->buffer)
++    {
++        ll_aligned_free_16(jpeg_codec->buffer);
++        jpeg_codec->buffer = nullptr;
++    }
++    jpeg_codec->size = 0;
++    jpeg_codec->offset = 0;
++}
+ 
+-    /* setup the decoder decoding parameters using user parameters */
+-    opj_setup_decoder(dinfo, &parameters);
++/**
++ * Estimates the number of layers necessary depending on the image surface (w x h)
++ */
++static U32 estimate_num_layers(U32 surface)
++{
++    if      (surface <= 1024)    return 2;  // Tiny (≤32×32)
++    else if (surface <= 16384)   return 3;  // Small (≤128×128)
++    else if (surface <= 262144)  return 4;  // Medium (≤512×512)
++    else if (surface <= 1048576) return 5;  // Up to ~1MP
++    else                         return 6;  // Up to ~1.5–2MP
++}
+ 
+-    /* open a byte stream */
+-    cio = opj_cio_open((opj_common_ptr)dinfo, base.getData(), base.getDataSize());
++/**
++ * Sets the parameters.tcp_rates according to the number of layers and a last tcp_rate value (which equals to the final compression ratio).
++ *
++ * Example for 6 layers:
++ *
++ *  i = 5, parameters.tcp_rates[6 - 1 - 5] = 8.0f * (1 << (5 << 1)) = 8192  // Layer 5 (lowest quality)
++ *  i = 4, parameters.tcp_rates[6 - 1 - 4] = 8.0f * (1 << (4 << 1)) = 2048  // Layer 4
++ *  i = 3, parameters.tcp_rates[6 - 1 - 3] = 8.0f * (1 << (3 << 1)) =  512  // Layer 3
++ *  i = 2, parameters.tcp_rates[6 - 1 - 2] = 8.0f * (1 << (2 << 1)) =  128  // Layer 2
++ *  i = 1, parameters.tcp_rates[6 - 1 - 1] = 8.0f * (1 << (1 << 1)) =   32  // Layer 1
++ *  i = 0, parameters.tcp_rates[6 - 1 - 0] = 8.0f * (1 << (0 << 1)) =    8  // Layer 0 (highest quality)
++ *
++ */
++static void set_tcp_rates(opj_cparameters_t* parameters, U32 num_layers = 1, F32 last_tcp_rate = LAST_TCP_RATE)
++{
++    parameters->tcp_numlayers = num_layers;
+ 
+-    /* decode the stream and fill the image structure */
+-    image = opj_decode(dinfo, cio);
++    for (int i = num_layers - 1; i >= 0; i--)
++    {
++        parameters->tcp_rates[num_layers - 1 - i] = last_tcp_rate * static_cast<F32>(1 << (i << 1));
++    }
++}
+ 
+-    /* close the byte stream */
+-    opj_cio_close(cio);
++class JPEG2KDecode : public JPEG2KBase
++{
++public:
+ 
+-    /* free remaining structures */
+-    if (dinfo)
++    JPEG2KDecode(S8 discardLevel)
+     {
+-        opj_destroy_decompress(dinfo);
++        memset(&parameters, 0, sizeof(opj_dparameters_t));
++        opj_set_default_decoder_parameters(&parameters);
++        parameters.cp_reduce = discardLevel;
+     }
+ 
+-    // The image decode failed if the return was NULL or the component
+-    // count was zero.  The latter is just a sanity check before we
+-    // dereference the array.
+-    if (!image || !image->numcomps)
++    ~JPEG2KDecode()
+     {
+-        LL_DEBUGS("Texture") << "ERROR -> decodeImpl: failed to decode image!" << LL_ENDL;
++        if (decoder)
++        {
++            opj_destroy_codec(decoder);
++        }
++        decoder = nullptr;
++
+         if (image)
+         {
+             opj_image_destroy(image);
+         }
+-        base.decodeFailed();
+-        return true; // done
+-    }
++        image = nullptr;
+ 
+-    // sometimes we get bad data out of the cache - check to see if the decode succeeded
+-    for (S32 i = 0; i < image->numcomps; i++)
+-    {
+-        if (image->comps[i].factor != base.getRawDiscardLevel())
++        if (stream)
+         {
+-            // if we didn't get the discard level we're expecting, fail
+-            opj_image_destroy(image);
+-            base.decodeFailed();
+-            return true;
++            opj_stream_destroy(stream);
++        }
++        stream = nullptr;
++
++        if (codestream_info)
++        {
++            opj_destroy_cstr_info(&codestream_info);
+         }
++        codestream_info = nullptr;
+     }
+ 
+-    if (image->numcomps <= first_channel)
++    bool readHeader(
++        U8* data,
++        U32 dataSize,
++        S32& widthOut,
++        S32& heightOut,
++        S32& components,
++        S32& discard_level)
+     {
+-        LL_WARNS() << "trying to decode more channels than are present in image: numcomps: " << image->numcomps << " first_channel: " << first_channel << LL_ENDL;
+-        opj_image_destroy(image);
+-        base.decodeFailed();
+-        return true;
+-    }
++        parameters.flags |= OPJ_DPARAMETERS_DUMP_FLAG;
+ 
+-    // Copy image data into our raw image format (instead of the separate channel format
++        decoder = opj_create_decompress(OPJ_CODEC_J2K);
+ 
+-    S32 img_components = image->numcomps;
+-    S32 channels = img_components - first_channel;
+-    if (channels > max_channel_count)
+-        channels = max_channel_count;
++        /* catch events using our callbacks and give a local context */
++        opj_set_error_handler(decoder, error_callback, nullptr);
++        opj_set_warning_handler(decoder, warning_callback, nullptr);
++        opj_set_info_handler(decoder, info_callback, nullptr);
+ 
+-    // Component buffers are allocated in an image width by height buffer.
+-    // The image placed in that buffer is ceil(width/2^factor) by
+-    // ceil(height/2^factor) and if the factor isn't zero it will be at the
+-    // top left of the buffer with black filled in the rest of the pixels.
+-    // It is integer math so the formula is written in ceildivpo2.
+-    // (Assuming all the components have the same width, height and
+-    // factor.)
+-    S32 comp_width = image->comps[0].w;
+-    S32 f = image->comps[0].factor;
+-    S32 width = ceildivpow2(image->x1 - image->x0, f);
+-    S32 height = ceildivpow2(image->y1 - image->y0, f);
+-    raw_image.resize(width, height, channels);
+-    U8* rawp = raw_image.getData();
+-    if (!rawp)
+-    {
+-        opj_image_destroy(image);
+-        base.setLastError("Memory error");
+-        base.decodeFailed();
+-        return true; // done
++        if (!opj_setup_decoder(decoder, &parameters))
++        {
++            return false;
++        }
++
++        if (stream)
++        {
++            opj_stream_destroy(stream);
++        }
++
++        stream = opj_stream_create(dataSize, true);
++        if (!stream)
++        {
++            return false;
++        }
++
++        opj_stream_set_user_data(stream, this, opj_free_user_data);
++        opj_stream_set_user_data_length(stream, dataSize);
++        opj_stream_set_read_function(stream, opj_read);
++        opj_stream_set_write_function(stream, opj_write);
++        opj_stream_set_skip_function(stream, opj_skip);
++        opj_stream_set_seek_function(stream, opj_seek);
++
++        buffer = data;
++        size = dataSize;
++        offset = 0;
++
++        // enable decoding partially loaded images
++        opj_decoder_set_strict_mode(decoder, OPJ_FALSE);
++
++        /* Read the main header of the codestream and if necessary the JP2 boxes*/
++        if (!opj_read_header((opj_stream_t*)stream, decoder, &image))
++        {
++            return false;
++        }
++
++        codestream_info = opj_get_cstr_info(decoder);
++
++        if (!codestream_info)
++        {
++            return false;
++        }
++
++        U32 tileDimX = codestream_info->tdx;
++        U32 tileDimY = codestream_info->tdy;
++        U32 tilesW = codestream_info->tw;
++        U32 tilesH = codestream_info->th;
++
++        widthOut = S32(tilesW * tileDimX);
++        heightOut = S32(tilesH * tileDimY);
++        components = codestream_info->nbcomps;
++
++        discard_level = 0;
++        while (tilesW > 1 && tilesH > 1 && discard_level < MAX_DISCARD_LEVEL)
++        {
++            discard_level++;
++            tilesW >>= 1;
++            tilesH >>= 1;
++        }
++
++        return true;
+     }
+ 
+-    // first_channel is what channel to start copying from
+-    // dest is what channel to copy to.  first_channel comes from the
+-    // argument, dest always starts writing at channel zero.
+-    for (S32 comp = first_channel, dest = 0; comp < first_channel + channels;
+-        comp++, dest++)
++    bool decode(U8* data, U32 dataSize, U32* channels, U8 discard_level)
+     {
+-        if (image->comps[comp].data)
++        parameters.flags &= ~OPJ_DPARAMETERS_DUMP_FLAG;
++
++        decoder = opj_create_decompress(OPJ_CODEC_J2K);
++        opj_setup_decoder(decoder, &parameters);
++
++        opj_set_info_handler(decoder, info_callback, this);
++        opj_set_warning_handler(decoder, warning_callback, this);
++        opj_set_error_handler(decoder, error_callback, this);
++
++        if (stream)
+         {
+-            S32 offset = dest;
+-            for (S32 y = (height - 1); y >= 0; y--)
+-            {
+-                for (S32 x = 0; x < width; x++)
+-                {
+-                    rawp[offset] = image->comps[comp].data[y * comp_width + x];
+-                    offset += channels;
+-                }
+-            }
++            opj_stream_destroy(stream);
+         }
+-        else // Some rare OpenJPEG versions have this bug.
++
++        stream = opj_stream_create(dataSize, true);
++        if (!stream)
++        {
++            return false;
++        }
++
++        opj_stream_set_user_data(stream, this, opj_free_user_data);
++        opj_stream_set_user_data_length(stream, dataSize);
++        opj_stream_set_read_function(stream, opj_read);
++        opj_stream_set_write_function(stream, opj_write);
++        opj_stream_set_skip_function(stream, opj_skip);
++        opj_stream_set_seek_function(stream, opj_seek);
++
++        buffer = data;
++        size = dataSize;
++        offset = 0;
++
++        if (image)
+         {
+-            LL_DEBUGS("Texture") << "ERROR -> decodeImpl: failed to decode image! (NULL comp data - OpenJPEG bug)" << LL_ENDL;
+             opj_image_destroy(image);
+-            base.decodeFailed();
+-            return true; // done
++            image = nullptr;
+         }
+-    }
+ 
+-    /* free image data structure */
+-    opj_image_destroy(image);
++        // needs to happen before opj_read_header and opj_decode...
++        opj_set_decoded_resolution_factor(decoder, discard_level);
+ 
+-    return true; // done
+-}
++        // enable decoding partially loaded images
++        opj_decoder_set_strict_mode(decoder, OPJ_FALSE);
+ 
++        if (!opj_read_header(stream, decoder, &image))
++        {
++            return false;
++        }
+ 
+-bool LLImageJ2COJ::encodeImpl(LLImageJ2C& base, const LLImageRaw& raw_image, const char* comment_text, F32 encode_time, bool reversible)
+-{
+-    const S32 MAX_COMPS = 5;
+-    opj_cparameters_t parameters;	/* compression parameters */
+-    opj_event_mgr_t event_mgr = { };		/* event manager */
++        // needs to happen before decode which may fail
++        if (channels)
++        {
++            *channels = image->numcomps;
++        }
+ 
++        OPJ_BOOL decoded = opj_decode(decoder, stream, image);
+ 
+-    /*
+-    configure the event callbacks (not required)
+-    setting of each callback is optional
+-    */
+-    event_mgr.error_handler = error_callback;
+-    event_mgr.warning_handler = warning_callback;
+-    event_mgr.info_handler = info_callback;
++        // count was zero.  The latter is just a sanity check before we
++        // dereference the array.
++        if (!decoded || !image || !image->numcomps)
++        {
++            opj_end_decompress(decoder, stream);
++            return false;
++        }
+ 
+-    /* set encoding parameters to default values */
+-    opj_set_default_encoder_parameters(&parameters);
+-    parameters.cod_format = 0;
+-    parameters.cp_disto_alloc = 1;
++        opj_end_decompress(decoder, stream);
+ 
+-    if (reversible)
+-    {
+-        parameters.tcp_numlayers = 1;
+-        parameters.tcp_rates[0] = 0.0f;
++        return true;
+     }
+-    else
++
++    opj_image_t* getImage() { return image; }
++
++private:
++    opj_dparameters_t         parameters;
++    opj_image_t*              image = nullptr;
++    opj_codec_t*              decoder = nullptr;
++    opj_stream_t*             stream = nullptr;
++    opj_codestream_info_v2_t* codestream_info = nullptr;
++};
++
++class JPEG2KEncode : public JPEG2KBase
++{
++public:
++    const OPJ_UINT32 TILE_SIZE = 64 * 64 * 3;
++
++    JPEG2KEncode(const char* comment_text_in, bool reversible)
+     {
+-        parameters.tcp_numlayers = 5;
+-        parameters.tcp_rates[0] = 1920.0f;
+-        parameters.tcp_rates[1] = 480.0f;
+-        parameters.tcp_rates[2] = 120.0f;
+-        parameters.tcp_rates[3] = 30.0f;
+-        parameters.tcp_rates[4] = 10.0f;
+-        parameters.irreversible = 1;
+-        if (raw_image.getComponents() >= 3)
++        memset(&parameters, 0, sizeof(opj_cparameters_t));
++
++        opj_set_default_encoder_parameters(&parameters);
++        parameters.cod_format = OPJ_CODEC_J2K;
++        parameters.prog_order = OPJ_RLCP; // should be the default, but, just in case
++        parameters.cp_disto_alloc = 1;    // enable rate allocation by distortion
++        parameters.max_cs_size = 0;       // do not cap max size because we're using tcp_rates and also irrelevant with lossless.
++
++        if (reversible)
+         {
+-            parameters.tcp_mct = 1;
++            parameters.irreversible = 0; // should be the default, but, just in case
++            parameters.tcp_numlayers = 1;
++            /* documentation seems to be wrong, should be 0.0f for lossless, not 1.0f
++               see https://github.com/uclouvain/openjpeg/blob/e7453e398b110891778d8da19209792c69ca7169/src/lib/openjp2/j2k.c#L7817
++            */
++            parameters.tcp_rates[0] = 0.0f;
+         }
++        else
++        {
++            parameters.irreversible = 1;
++        }
++
++        if (comment_text)
++        {
++            free(comment_text);
++        }
++        comment_text = comment_text_in ? strdup(comment_text_in) : nullptr;
++
++        parameters.cp_comment = comment_text ? comment_text : (char*)"no comment";
++        llassert(parameters.cp_comment);
+     }
+ 
+-    if (!comment_text)
++    ~JPEG2KEncode()
+     {
+-        parameters.cp_comment = (char*)"";
++        if (encoder)
++        {
++            opj_destroy_codec(encoder);
++        }
++        encoder = nullptr;
++
++        if (image)
++        {
++            opj_image_destroy(image);
++        }
++        image = nullptr;
++
++        if (stream)
++        {
++            opj_stream_destroy(stream);
++        }
++        stream = nullptr;
++
++        if (comment_text)
++        {
++            free(comment_text);
++        }
++        comment_text = nullptr;
+     }
+-    else
++
++    bool encode(const LLImageRaw& rawImageIn, LLImageJ2C &compressedImageOut)
+     {
+-        // Awful hacky cast, too lazy to copy right now.
+-        parameters.cp_comment = (char*)comment_text;
+-    }
++        LLImageDataSharedLock lockIn(&rawImageIn);
++        LLImageDataLock lockOut(&compressedImageOut);
+ 
+-    //
+-    // Fill in the source image from our raw image
+-    //
+-    OPJ_COLOR_SPACE color_space = CLRSPC_SRGB;
+-    opj_image_cmptparm_t cmptparm[MAX_COMPS];
+-    opj_image_t* image = nullptr;
+-    S32 numcomps = raw_image.getComponents();
+-    S32 width = raw_image.getWidth();
+-    S32 height = raw_image.getHeight();
+-
+-    memset(&cmptparm[0], 0, MAX_COMPS * sizeof(opj_image_cmptparm_t));
+-    for (S32 c = 0; c < numcomps; c++) {
+-        cmptparm[c].prec = 8;
+-        cmptparm[c].bpp = 8;
+-        cmptparm[c].sgnd = 0;
+-        cmptparm[c].dx = parameters.subsampling_dx;
+-        cmptparm[c].dy = parameters.subsampling_dy;
+-        cmptparm[c].w = width;
+-        cmptparm[c].h = height;
+-    }
++        setImage(rawImageIn);
+ 
+-    /* create the image */
+-    image = opj_image_create(numcomps, &cmptparm[0], color_space);
++        encoder = opj_create_compress(OPJ_CODEC_J2K);
+ 
+-    image->x1 = width;
+-    image->y1 = height;
++        /* catch events using our callbacks and give a local context */
++        opj_set_error_handler(encoder, error_callback, nullptr);
++        opj_set_warning_handler(encoder, warning_callback, nullptr);
++        opj_set_info_handler(encoder, info_callback, nullptr);
+ 
+-    S32 i = 0;
+-    const U8* src_datap = raw_image.getData();
+-    for (S32 y = height - 1; y >= 0; y--)
+-    {
+-        for (S32 x = 0; x < width; x++)
++        parameters.tcp_mct = (image->numcomps >= 3) ? 1 : 0; // no color transform for RGBA images
++
++
++        // if not lossless compression, computes tcp_numlayers and max_cs_size depending on the image dimensions
++        if( parameters.irreversible )
+         {
+-            const U8* pixel = src_datap + (y * width + x) * numcomps;
+-            for (S32 c = 0; c < numcomps; c++)
+-            {
+-                image->comps[c].data[i] = *pixel;
+-                pixel++;
+-            }
+-            i++;
++
++            // computes a number of layers
++            U32 surface = rawImageIn.getWidth() * rawImageIn.getHeight();
++
++            // gets the necessary number of layers
++            U32 nb_layers = estimate_num_layers(surface);
++
++            // fills parameters.tcp_rates and updates parameters.tcp_numlayers
++            set_tcp_rates(&parameters, nb_layers, LAST_TCP_RATE);
++
+         }
+-    }
+ 
++        U32 width_tiles = (rawImageIn.getWidth() >> 6);
++        U32 height_tiles = (rawImageIn.getHeight() >> 6);
+ 
++        // Allow images with a width or height that are MIN_IMAGE_SIZE <= x < 64
++        if (width_tiles == 0 && (rawImageIn.getWidth() >= MIN_IMAGE_SIZE))
++        {
++            width_tiles = 1;
++        }
++        if (height_tiles == 0 && (rawImageIn.getHeight() >= MIN_IMAGE_SIZE))
++        {
++            height_tiles = 1;
++        }
+ 
+-    /* encode the destination image */
+-    /* ---------------------------- */
++        if (width_tiles == 1 || height_tiles == 1)
++        {
++            // Images with either dimension less than 32 need less number of resolutions otherwise they error
++            int min_dim = rawImageIn.getWidth() < rawImageIn.getHeight() ? rawImageIn.getWidth() : rawImageIn.getHeight();
++            int max_res = 1 + (int)floor(log2(min_dim));
++            parameters.numresolution = max_res;
++        }
+ 
+-    int codestream_length;
+-    opj_cio_t* cio = nullptr;
++        if (!opj_setup_encoder(encoder, &parameters, image))
++        {
++            return false;
++        }
+ 
+-    /* get a J2K compressor handle */
+-    opj_cinfo_t* cinfo = opj_create_compress(CODEC_J2K);
++        U32 tile_count = width_tiles * height_tiles;
++        U32 data_size_guess = tile_count * TILE_SIZE;
+ 
+-    /* catch events using our callbacks and give a local context */
+-    opj_set_event_mgr((opj_common_ptr)cinfo, &event_mgr, stderr);
++        // will be freed in opj_free_user_data_write
++        buffer = (U8*)ll_aligned_malloc_16(data_size_guess);
++        size = data_size_guess;
++        offset = 0;
+ 
+-    /* setup the encoder parameters using the current image and using user parameters */
+-    opj_setup_encoder(cinfo, &parameters, image);
++        memset(buffer, 0, data_size_guess);
+ 
+-    /* open a byte stream for writing */
+-    /* allocate memory for all tiles */
+-    cio = opj_cio_open((opj_common_ptr)cinfo, nullptr, 0);
++        if (stream)
++        {
++            opj_stream_destroy(stream);
++        }
+ 
+-    /* encode the image */
+-    bool bSuccess = opj_encode(cinfo, cio, image, nullptr);
+-    if (!bSuccess)
+-    {
+-        opj_cio_close(cio);
+-        // _LL_DEBUGS("Texture") << "Failed to encode image." << LL_ENDL;
+-        return false;
+-    }
+-    codestream_length = cio_tell(cio);
++        stream = opj_stream_create(data_size_guess, OPJ_FALSE);
++        if (!stream)
++        {
++            return false;
++        }
+ 
+-    base.copyData(cio->buffer, codestream_length);
+-    base.updateData(); // set width, height
++        opj_stream_set_user_data(stream, this, opj_free_user_data_write);
++        opj_stream_set_user_data_length(stream, data_size_guess);
++        opj_stream_set_read_function(stream, opj_read);
++        opj_stream_set_write_function(stream, opj_write);
++        opj_stream_set_skip_function(stream, opj_skip);
++        opj_stream_set_seek_function(stream, opj_seek);
+ 
+-    /* close and free the byte stream */
+-    opj_cio_close(cio);
++        OPJ_BOOL started = opj_start_compress(encoder, image, stream);
+ 
+-    /* free remaining compression structures */
+-    opj_destroy_compress(cinfo);
++        if (!started)
++        {
++            return false;
++        }
+ 
++        if (!opj_encode(encoder, stream))
++        {
++            return false;
++        }
+ 
+-    /* free user parameters structure */
+-    if (parameters.cp_matrice) free(parameters.cp_matrice);
++        OPJ_BOOL encoded = opj_end_compress(encoder, stream);
+ 
+-    /* free image data */
+-    opj_image_destroy(image);
+-    return true;
+-}
++        // if we successfully encoded, then stream out the compressed data...
++        if (encoded)
++        {
++            // "append" (set) the data we "streamed" (memcopied) for writing to the formatted image
++            // with side-effect of setting the actually encoded size  to same
++            compressedImageOut.allocateData((S32)offset);
++            memcpy(compressedImageOut.getData(), buffer, offset);
++            compressedImageOut.updateData(); // update width, height etc from header
++        }
++        return encoded;
++    }
+ 
+-inline S32 extractLong4(U8 const* aBuffer, int nOffset)
+-{
+-    S32 ret = aBuffer[nOffset] << 24;
+-    ret += aBuffer[nOffset + 1] << 16;
+-    ret += aBuffer[nOffset + 2] << 8;
+-    ret += aBuffer[nOffset + 3];
+-    return ret;
+-}
++    void setImage(const LLImageRaw& raw)
++    {
++        S32 numcomps = raw.getComponents();
++        S32 width    = raw.getWidth();
++        S32 height   = raw.getHeight();
+ 
+-inline S32 extractShort2(U8 const* aBuffer, int nOffset)
+-{
+-    S32 ret = aBuffer[nOffset] << 8;
+-    ret += aBuffer[nOffset + 1];
++        std::vector<opj_image_cmptparm_t> cmptparm(numcomps);
+ 
+-    return ret;
+-}
++        for (S32 c = 0; c < numcomps; c++)
++        {
++            cmptparm[c].prec = 8; // replaces .bpp
++            cmptparm[c].sgnd = 0;
++            cmptparm[c].dx = parameters.subsampling_dx;
++            cmptparm[c].dy = parameters.subsampling_dy;
++            cmptparm[c].w = width;
++            cmptparm[c].h = height;
++        }
+ 
+-inline bool isSOC(U8 const* aBuffer)
+-{
+-    return aBuffer[0] == 0xFF && aBuffer[1] == 0x4F;
+-}
++        image = opj_image_create(numcomps, cmptparm.data(), OPJ_CLRSPC_SRGB);
+ 
+-inline bool isSIZ(U8 const* aBuffer)
+-{
+-    return aBuffer[0] == 0xFF && aBuffer[1] == 0x51;
+-}
++        image->x1 = width;
++        image->y1 = height;
+ 
+-bool getMetadataFast(LLImageJ2C& aImage, S32& aW, S32& aH, S32& aComps)
+-{
+-    const int J2K_HDR_LEN(42);
+-    const int J2K_HDR_X1(8);
+-    const int J2K_HDR_Y1(12);
+-    const int J2K_HDR_X0(16);
+-    const int J2K_HDR_Y0(20);
+-    const int J2K_HDR_NUMCOMPS(40);
+-
+-    if (aImage.getDataSize() < J2K_HDR_LEN)
+-        return false;
++        const U8 *src_datap = raw.getData();
+ 
+-    U8 const* pBuffer = aImage.getData();
++        S32 i = 0;
++        for (S32 y = height - 1; y >= 0; y--)
++        {
++            for (S32 x = 0; x < width; x++)
++            {
++                const U8 *pixel = src_datap + (y * width + x) * numcomps;
++                for (S32 c = 0; c < numcomps; c++)
++                {
++                    image->comps[c].data[i] = *pixel;
++                    pixel++;
++                }
++                i++;
++            }
++        }
+ 
+-    if (!isSOC(pBuffer) || !isSIZ(pBuffer + 2))
+-        return false;
++        // This likely works, but there seems to be an issue openjpeg side
++        // check over after gixing that.
+ 
+-    S32 x1 = extractLong4(pBuffer, J2K_HDR_X1);
+-    S32 y1 = extractLong4(pBuffer, J2K_HDR_Y1);
+-    S32 x0 = extractLong4(pBuffer, J2K_HDR_X0);
+-    S32 y0 = extractLong4(pBuffer, J2K_HDR_Y0);
+-    S32 numComps = extractShort2(pBuffer, J2K_HDR_NUMCOMPS);
++        // De-interleave to component plane data
++        /*
++        switch (numcomps)
++        {
++        case 0:
++        default:
++            break;
+ 
+-    aComps = numComps;
+-    aW = x1 - x0;
+-    aH = y1 - y0;
++        case 1:
++        {
++            U32 rBitDepth = image->comps[0].bpp;
++            U32 bytesPerPixel = rBitDepth >> 3;
++            memcpy(image->comps[0].data, src, width * height * bytesPerPixel);
++        }
++        break;
+ 
+-    return true;
+-}
++        case 2:
++        {
++            U32 rBitDepth = image->comps[0].bpp;
++            U32 gBitDepth = image->comps[1].bpp;
++            U32 totalBitDepth = rBitDepth + gBitDepth;
++            U32 bytesPerPixel = totalBitDepth >> 3;
++            U32 stride = width * bytesPerPixel;
++            U32 offset = 0;
++            for (S32 y = height - 1; y >= 0; y--)
++            {
++                const U8* component = src + (y * stride);
++                for (S32 x = 0; x < width; x++)
++                {
++                    image->comps[0].data[offset] = *component++;
++                    image->comps[1].data[offset] = *component++;
++                    offset++;
++                }
++            }
++        }
++        break;
+ 
+-bool LLImageJ2COJ::getMetadata(LLImageJ2C& base)
+-{
+-    //
+-    // FIXME: We get metadata by decoding the ENTIRE image.
+-    //
++        case 3:
++        {
++            U32 rBitDepth = image->comps[0].bpp;
++            U32 gBitDepth = image->comps[1].bpp;
++            U32 bBitDepth = image->comps[2].bpp;
++            U32 totalBitDepth = rBitDepth + gBitDepth + bBitDepth;
++            U32 bytesPerPixel = totalBitDepth >> 3;
++            U32 stride = width * bytesPerPixel;
++            U32 offset = 0;
++            for (S32 y = height - 1; y >= 0; y--)
++            {
++                const U8* component = src + (y * stride);
++                for (S32 x = 0; x < width; x++)
++                {
++                    image->comps[0].data[offset] = *component++;
++                    image->comps[1].data[offset] = *component++;
++                    image->comps[2].data[offset] = *component++;
++                    offset++;
++                }
++            }
++        }
++        break;
+ 
+-    // Update the raw discard level
+-    base.updateRawDiscardLevel();
+ 
+-    S32 width(0);
+-    S32 height(0);
+-    S32 img_components(0);
++        case 4:
++        {
++            U32 rBitDepth = image->comps[0].bpp;
++            U32 gBitDepth = image->comps[1].bpp;
++            U32 bBitDepth = image->comps[2].bpp;
++            U32 aBitDepth = image->comps[3].bpp;
+ 
+-    if (getMetadataFast(base, width, height, img_components))
+-    {
+-        base.setSize(width, height, img_components);
+-        return true;
++            U32 totalBitDepth = rBitDepth + gBitDepth + bBitDepth + aBitDepth;
++            U32 bytesPerPixel = totalBitDepth >> 3;
++
++            U32 stride = width * bytesPerPixel;
++            U32 offset = 0;
++            for (S32 y = height - 1; y >= 0; y--)
++            {
++                const U8* component = src + (y * stride);
++                for (S32 x = 0; x < width; x++)
++                {
++                    image->comps[0].data[offset] = *component++;
++                    image->comps[1].data[offset] = *component++;
++                    image->comps[2].data[offset] = *component++;
++                    image->comps[3].data[offset] = *component++;
++                    offset++;
++                }
++            }
++        }
++        break;
++        }*/
+     }
+ 
+-    // Do it the old and slow way, decode the image with openjpeg
++    opj_image_t* getImage() { return image; }
+ 
+-    opj_dparameters_t parameters;	/* decompression parameters */
+-    opj_event_mgr_t event_mgr = { };		/* event manager */
+-    opj_image_t* image = nullptr;
++private:
++    opj_cparameters_t   parameters;
++    opj_image_t*        image = nullptr;
++    opj_codec_t*        encoder = nullptr;
++    opj_stream_t*       stream = nullptr;
++    char*               comment_text = nullptr;
++};
+ 
+-    opj_dinfo_t* dinfo = nullptr;	/* handle to a decompressor */
+-    opj_cio_t* cio = nullptr;
+ 
++LLImageJ2COJ::LLImageJ2COJ()
++    : LLImageJ2CImpl()
++{
++}
+ 
+-    /* configure the event callbacks (not required) */
+-    event_mgr.error_handler = error_callback;
+-    event_mgr.warning_handler = warning_callback;
+-    event_mgr.info_handler = info_callback;
+ 
+-    /* set decoding parameters to default values */
+-    opj_set_default_decoder_parameters(&parameters);
++LLImageJ2COJ::~LLImageJ2COJ()
++{
++}
+ 
+-    // Only decode what's required to get the size data.
+-    parameters.cp_limit_decoding = LIMIT_TO_MAIN_HEADER;
++bool LLImageJ2COJ::initDecode(LLImageJ2C &base, LLImageRaw &raw_image, int discard_level, int* region)
++{
++    base.mDiscardLevel = discard_level;
++    return false;
++}
++
++bool LLImageJ2COJ::initEncode(LLImageJ2C &base, LLImageRaw &raw_image, int blocks_size, int precincts_size, int levels)
++{
++    LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE;
++    // No specific implementation for this method in the OpenJpeg case
++    return false;
++}
+ 
+-    //parameters.cp_reduce = mRawDiscardLevel;
++bool LLImageJ2COJ::decodeImpl(LLImageJ2C &base, LLImageRaw &raw_image, F32 decode_time, S32 first_channel, S32 max_channel_count)
++{
++    LLImageDataLock lockIn(&base);
++    LLImageDataLock lockOut(&raw_image);
+ 
+-    /* decode the code-stream */
+-    /* ---------------------- */
++    JPEG2KDecode decoder(0);
+ 
+-    /* JPEG-2000 codestream */
++    U32 image_channels = 0;
++    S32 data_size = base.getDataSize();
++    S32 max_bytes = (base.getMaxBytes() > 0 ? llmin(base.getMaxBytes(), data_size) : data_size);
++    bool decoded = decoder.decode(base.getData(), max_bytes, &image_channels, base.getRawDiscardLevel());
+ 
+-    /* get a decoder handle */
+-    dinfo = opj_create_decompress(CODEC_J2K);
++    // set correct channel count early so failed decodes don't miss it...
++    S32 channels = (S32)image_channels - first_channel;
++    channels = llmin(channels, max_channel_count);
+ 
+-    /* catch events using our callbacks and give a local context */
+-    opj_set_event_mgr((opj_common_ptr)dinfo, &event_mgr, stderr);
++    if (!decoded || channels <= 0)
++    {
++        base.setLastError("OpenJPEG could not decode the JPEG2000 stream");
++        base.decodeFailed();
++        return true;
++    }
+ 
+-    /* setup the decoder decoding parameters using user parameters */
+-    opj_setup_decoder(dinfo, &parameters);
++    opj_image_t *image = decoder.getImage();
+ 
+-    /* open a byte stream */
+-    cio = opj_cio_open((opj_common_ptr)dinfo, base.getData(), base.getDataSize());
++    // Component buffers are allocated in an image width by height buffer.
++    // The image placed in that buffer is ceil(width/2^factor) by
++    // ceil(height/2^factor) and if the factor isn't zero it will be at the
++    // top left of the buffer with black filled in the rest of the pixels.
++    // It is integer math so the formula is written in ceildivpo2.
++    // (Assuming all the components have the same width, height and
++    // factor.)
++    U32 comp_width = image->comps[0].w; // leave this unshifted by 'f' discard factor, the strides are always for the full buffer width
++    U32 f = image->comps[0].factor;
+ 
+-    /* decode the stream and fill the image structure */
+-    image = opj_decode(dinfo, cio);
++    // do size the texture to the mem we'll acrually use...
++    U32 width = image->comps[0].w;
++    U32 height = image->comps[0].h;
+ 
+-    /* close the byte stream */
+-    opj_cio_close(cio);
++    raw_image.resize(U16(width), U16(height), S8(channels));
+ 
+-    /* free remaining structures */
+-    if (dinfo)
++    U8 *rawp = raw_image.getData();
++    if (!rawp)
++    {
++        base.setLastError("Could not allocate decoded texture");
++        base.decodeFailed();
++        return true;
++    }
++
++    // first_channel is what channel to start copying from
++    // dest is what channel to copy to.  first_channel comes from the
++    // argument, dest always starts writing at channel zero.
++    for (S32 comp = first_channel, dest = 0; comp < first_channel + channels; comp++, dest++)
+     {
+-        opj_destroy_decompress(dinfo);
++        llassert(image->comps[comp].data);
++        if (image->comps[comp].data)
++        {
++            S32 offset = dest;
++            for (S32 y = (height - 1); y >= 0; y--)
++            {
++                for (U32 x = 0; x < width; x++)
++                {
++                    rawp[offset] = image->comps[comp].data[y*comp_width + x];
++                    offset += channels;
++                }
++            }
++        }
++        else // Some rare OpenJPEG versions have this bug.
++        {
++            base.setLastError("OpenJPEG returned an empty texture component");
++            base.decodeFailed();
++            return true;
++        }
+     }
+ 
+-    if (!image)
++    base.setDiscardLevel(f);
++
++    return true; // done
++}
++
++
++bool LLImageJ2COJ::encodeImpl(LLImageJ2C &base, const LLImageRaw &raw_image, const char* comment_text, F32 encode_time, bool reversible)
++{
++    if (raw_image.isBufferInvalid())
+     {
+-        LL_WARNS() << "ERROR -> getMetadata: failed to decode image!" << LL_ENDL;
++        base.setLastError("Invalid input, no buffer");
+         return false;
+     }
+ 
+-    // Copy image data into our raw image format (instead of the separate channel format
++    JPEG2KEncode encode(comment_text, reversible);
++    bool encoded = encode.encode(raw_image, base);
++    if (!encoded)
++    {
++        LL_WARNS() << "Openjpeg encoding was unsuccessful, returning false" << LL_ENDL;
++    }
++    return encoded;
++}
++
++bool LLImageJ2COJ::getMetadata(LLImageJ2C &base)
++{
++    LLImageDataLock lock(&base);
+ 
+-    img_components = image->numcomps;
+-    width = image->x1 - image->x0;
+-    height = image->y1 - image->y0;
+-    base.setSize(width, height, img_components);
++    JPEG2KDecode decode(0);
++
++    S32 width = 0;
++    S32 height = 0;
++    S32 components = 0;
++    S32 discard_level = 0;
++
++    U32 dataSize = base.getDataSize();
++    U8* data = base.getData();
++    bool header_read = decode.readHeader(data, dataSize, width, height, components, discard_level);
++    if (!header_read)
++    {
++        return false;
++    }
+ 
+-    /* free image data structure */
+-    opj_image_destroy(image);
++    base.setSize(width, height, components);
+     return true;
+ }
+diff --git a/indra/llimagej2coj/llimagej2coj.h b/indra/llimagej2coj/llimagej2coj.h
+index 288b24a..da49597 100644
+--- a/indra/llimagej2coj/llimagej2coj.h
++++ b/indra/llimagej2coj/llimagej2coj.h
+@@ -29,18 +29,20 @@
+ 
+ #include "llimagej2c.h"
+ 
++const F32 LAST_TCP_RATE = 1.f/DEFAULT_COMPRESSION_RATE; // should be 8, giving a 1:8 ratio
++
+ class LLImageJ2COJ : public LLImageJ2CImpl
+ {
+ public:
+     LLImageJ2COJ();
+     virtual ~LLImageJ2COJ();
+ protected:
+-    virtual bool getMetadata(LLImageJ2C& base);
+-    virtual bool decodeImpl(LLImageJ2C& base, LLImageRaw& raw_image, F32 decode_time, S32 first_channel, S32 max_channel_count);
+-    virtual bool encodeImpl(LLImageJ2C& base, const LLImageRaw& raw_image, const char* comment_text, F32 encode_time = 0.0,
+-        bool reversible = false);
+-    virtual bool initDecode(LLImageJ2C& base, LLImageRaw& raw_image, int discard_level = -1, int* region = NULL);
+-    virtual bool initEncode(LLImageJ2C& base, LLImageRaw& raw_image, int blocks_size = -1, int precincts_size = -1, int levels = 0);
++    virtual bool getMetadata(LLImageJ2C &base);
++    virtual bool decodeImpl(LLImageJ2C &base, LLImageRaw &raw_image, F32 decode_time, S32 first_channel, S32 max_channel_count);
++    virtual bool encodeImpl(LLImageJ2C &base, const LLImageRaw &raw_image, const char* comment_text, F32 encode_time=0.0,
++                                bool reversible = false);
++    virtual bool initDecode(LLImageJ2C &base, LLImageRaw &raw_image, int discard_level = -1, int* region = NULL);
++    virtual bool initEncode(LLImageJ2C &base, LLImageRaw &raw_image, int blocks_size = -1, int precincts_size = -1, int levels = 0);
+     virtual std::string getEngineInfo() const;
+ };
+ 
+diff --git a/indra/llrender/llglslshader.cpp b/indra/llrender/llglslshader.cpp
+index a268ea0..6a8baec 100644
+--- a/indra/llrender/llglslshader.cpp
++++ b/indra/llrender/llglslshader.cpp
+@@ -2079,6 +2079,7 @@ LLUUID LLGLSLShader::hash()
+     hash_obj.update(gGLManager.mGLVendor);
+     hash_obj.update(gGLManager.mGLRenderer);
+     hash_obj.update(gGLManager.mGLVersionString);
++    hash_obj.update(gGLManager.mDriverVersionVendorString);
+     return hash_obj.digest();
+ }
+ 
+diff --git a/indra/llrender/llimagegl.cpp b/indra/llrender/llimagegl.cpp
+index bc548a5..e0da114 100644
+--- a/indra/llrender/llimagegl.cpp
++++ b/indra/llrender/llimagegl.cpp
+@@ -1058,7 +1058,7 @@ bool should_stagger_image_set(bool compressed)
+ #else
+     // glTexSubImage2D doesn't work with compressed textures on select tested Nvidia GPUs on Windows 10 -Cosmic,2023-03-08
+     // Setting media textures off-thread seems faster when not using sub_image_lines (Nvidia/Windows 10) -Cosmic,2023-03-31
+-    return !compressed && on_main_thread() && !gGLManager.mIsIntel;
++    return !compressed && on_main_thread() && !gGLManager.mIsIntel && !gGLManager.mIsAMD;
+ #endif
+ }
+ 
+diff --git a/indra/llrender/llshadermgr.cpp b/indra/llrender/llshadermgr.cpp
+index 3391e07..19fc049 100644
+--- a/indra/llrender/llshadermgr.cpp
++++ b/indra/llrender/llshadermgr.cpp
+@@ -641,6 +641,19 @@ GLuint LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shader_lev
+     extra_code_text[extra_code_count++] = strdup("#define GBUFFER_FLAG_HAS_HDRI      1.0\n");  // bit 2
+     extra_code_text[extra_code_count++] = strdup("#define GET_GBUFFER_FLAG(data, flag)    (abs(data-flag)< 0.1)\n");
+ 
++    // Skinning helpers and their consumers are compiled as separate shader
++    // objects. Supply the test defines to both without changing the scope of
++    // the other global defines used to load basic shader dependencies.
++    for (const char* name : { "RIGGED_LOCAL_ORIGIN", "RIGGED_DIRECT_NORMALS", "RIGGED_PRECISE_MATH", "SKIN_PRECISE" })
++    {
++        auto global = LLGLSLShader::sGlobalDefines.find(name);
++        if (global != LLGLSLShader::sGlobalDefines.end() && (!defines || defines->count(name) == 0))
++        {
++            std::string define = "#define " + global->first + " " + global->second + "\n";
++            extra_code_text[extra_code_count++] = (GLchar*)strdup(define.c_str());
++        }
++    }
++
+     if (defines)
+     {
+         for (auto iter = defines->begin(); iter != defines->end(); ++iter)
+@@ -1014,10 +1027,25 @@ void LLShaderMgr::initShaderCache(bool enabled, const LLUUID& old_cache_version,
+     LL_INFOS("ShaderMgr") << "Initializing shader cache" << LL_ENDL;
+ 
+     mShaderCacheEnabled = gGLManager.mGLVersion >= 4.09 && enabled;
++    if (mShaderCacheEnabled)
++    {
++        GLint num_binary_formats = 0;
++        glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &num_binary_formats);
++        const bool have_entry_points = glProgramParameteri && glGetProgramBinary && glProgramBinary;
++        if (!have_entry_points || num_binary_formats <= 0)
++        {
++            LL_WARNS("ShaderMgr") << "Disabling shader binary cache: "
++                                   << (have_entry_points ? "driver reports " : "required entry point missing; driver reports ")
++                                   << num_binary_formats << " program binary format(s)" << LL_ENDL;
++            mShaderCacheEnabled = false;
++        }
++    }
+ 
+-    if(!mShaderCacheEnabled || mShaderCacheVersion.notNull())
++    if (!mShaderCacheEnabled || mShaderCacheVersion == current_cache_version)
+         return;
+ 
++    // Source edits can change the version during an in-process shader reload.
++    mShaderBinaryCache.clear();
+     mShaderCacheVersion = current_cache_version;
+ 
+     mShaderCacheDir = gDirUtilp->getExpandedFilename(LL_PATH_CACHE, "shader_cache");
+@@ -1128,6 +1156,11 @@ bool LLShaderMgr::loadCachedProgramBinary(LLGLSLShader* shader)
+ {
+     if (!mShaderCacheEnabled) return false;
+ 
++    if (!shader || shader->mProgramObject == 0)
++    {
++        return false;
++    }
++
+     glProgramParameteri(shader->mProgramObject, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
+ 
+     auto binary_iter = mShaderBinaryCache.find(shader->mShaderHash);
+@@ -1175,6 +1208,11 @@ bool LLShaderMgr::saveCachedProgramBinary(LLGLSLShader* shader)
+ {
+     if (!mShaderCacheEnabled) return true;
+ 
++    if (!shader || shader->mProgramObject == 0)
++    {
++        return false;
++    }
++
+     ProgramBinaryData binary_info = ProgramBinaryData();
+     glGetProgramiv(shader->mProgramObject, GL_PROGRAM_BINARY_LENGTH, &binary_info.mBinaryLength);
+     if (binary_info.mBinaryLength > 0)
+@@ -1446,6 +1484,9 @@ void LLShaderMgr::initAttribsAndUniforms()
+ 
+     mReservedUniforms.push_back("matrixPalette");
+     mReservedUniforms.push_back("translationPalette");
++    mReservedUniforms.push_back("matrixPaletteSize");
++    mReservedUniforms.push_back("skin_origin");
++    mReservedUniforms.push_back("last_skin_origin");
+ 
+     mReservedUniforms.push_back("screenTex");
+     mReservedUniforms.push_back("screenDepth");
+diff --git a/indra/llrender/llshadermgr.h b/indra/llrender/llshadermgr.h
+index fb7562c..c4c7c7e 100644
+--- a/indra/llrender/llshadermgr.h
++++ b/indra/llrender/llshadermgr.h
+@@ -237,6 +237,9 @@ public:
+ 
+         AVATAR_MATRIX,                      //  "matrixPalette"
+         AVATAR_TRANSLATION,                 //  "translationPalette"
++        AVATAR_MATRIX_SIZE,                 //  "matrixPaletteSize"
++        SKIN_ORIGIN,                 //  "skin_origin"
++        AVATAR_LAST_SKIN_ORIGIN,            //  "last_skin_origin"
+ 
+         WATER_SCREENTEX,                    //  "screenTex"
+         WATER_SCREENDEPTH,                  //  "screenDepth"
+diff --git a/indra/newview/CMakeLists.txt b/indra/newview/CMakeLists.txt
+index 0470c63..f82bc33 100644
+--- a/indra/newview/CMakeLists.txt
++++ b/indra/newview/CMakeLists.txt
+@@ -1883,6 +1883,7 @@ if (WINDOWS)
+         --artwork=${ARTWORK_DIR}
+         "--bugsplat=${BUGSPLAT_DB}"
+         "--discord=${USE_DISCORD}"
++        "--fmodstudio=${USE_FMODSTUDIO}"
+         "--openal=${USE_OPENAL}"
+         "--tracy=${USE_TRACY}"
+         --build=${CMAKE_CURRENT_BINARY_DIR}
+@@ -1922,6 +1923,7 @@ if (WINDOWS)
+             --artwork=${ARTWORK_DIR}
+             "--bugsplat=${BUGSPLAT_DB}"
+             "--discord=${USE_DISCORD}"
++            "--fmodstudio=${USE_FMODSTUDIO}"
+             "--openal=${USE_OPENAL}"
+             "--tracy=${USE_TRACY}"
+             --build=${CMAKE_CURRENT_BINARY_DIR}
+@@ -1987,6 +1989,7 @@ if (WINDOWS)
+               --artwork=${ARTWORK_DIR}
+               "--bugsplat=${BUGSPLAT_DB}"
+               "--discord=${USE_DISCORD}"
++              "--fmodstudio=${USE_FMODSTUDIO}"
+               "--openal=${USE_OPENAL}"
+               "--tracy=${USE_TRACY}"
+               --build=${CMAKE_CURRENT_BINARY_DIR}
+@@ -2173,6 +2176,7 @@ if (LINUX)
+         --artwork=${ARTWORK_DIR}
+         "--bugsplat=${BUGSPLAT_DB}"
+         "--discord=${USE_DISCORD}"
++        "--fmodstudio=${USE_FMODSTUDIO}"
+         "--openal=${USE_OPENAL}"
+         "--tracy=${USE_TRACY}"
+         --build=${CMAKE_CURRENT_BINARY_DIR}
+@@ -2202,6 +2206,7 @@ if (LINUX)
+       --artwork=${ARTWORK_DIR}
+       "--bugsplat=${BUGSPLAT_DB}"
+       "--discord=${USE_DISCORD}"
++      "--fmodstudio=${USE_FMODSTUDIO}"
+       "--openal=${USE_OPENAL}"
+       "--tracy=${USE_TRACY}"
+       --build=${CMAKE_CURRENT_BINARY_DIR}
+@@ -2277,6 +2282,7 @@ if (DARWIN)
+       --artwork=${ARTWORK_DIR}
+       "--bugsplat=${BUGSPLAT_DB}"
+       "--discord=${USE_DISCORD}"
++      "--fmodstudio=${USE_FMODSTUDIO}"
+       "--openal=${USE_OPENAL}"
+       "--tracy=${USE_TRACY}"
+       --build=${CMAKE_CURRENT_BINARY_DIR}
+@@ -2310,6 +2316,7 @@ if (DARWIN)
+               --artwork=${ARTWORK_DIR}
+               "--bugsplat=${BUGSPLAT_DB}"
+               "--discord=${USE_DISCORD}"
++              "--fmodstudio=${USE_FMODSTUDIO}"
+               "--openal=${USE_OPENAL}"
+               "--tracy=${USE_TRACY}"
+               --build=${CMAKE_CURRENT_BINARY_DIR}
+diff --git a/indra/newview/app_settings/settings.xml b/indra/newview/app_settings/settings.xml
+index 210eefe..443789a 100644
+--- a/indra/newview/app_settings/settings.xml
++++ b/indra/newview/app_settings/settings.xml
+@@ -10365,6 +10365,61 @@
+       <key>Value</key>
+       <integer>1</integer>
+     </map>
++    <key>RenderRiggedLocalOrigin</key>
++    <map>
++      <key>Comment</key>
++      <string>Test avatar-root-relative rigged mesh skinning. Restart required. Disable to compare agent-space palette blending.</string>
++      <key>Persist</key>
++      <integer>1</integer>
++      <key>Type</key>
++      <string>Boolean</string>
++      <key>Value</key>
++      <integer>1</integer>
++    </map>
++    <key>RenderRiggedDirectNormals</key>
++    <map>
++      <key>Comment</key>
++      <string>Transform rigged mesh normals and tangents as directions. Restart required. Disable to compare transformed-point subtraction.</string>
++      <key>Persist</key>
++      <integer>1</integer>
++      <key>Type</key>
++      <string>Boolean</string>
++      <key>Value</key>
++      <integer>1</integer>
++    </map>
++    <key>RenderRiggedPreciseMath</key>
++    <map>
++      <key>Comment</key>
++      <string>Test precise arithmetic and invariant positions in skinning shaders on GLSL 4.0 or newer. Restart required. May reduce rendering performance.</string>
++      <key>Persist</key>
++      <integer>1</integer>
++      <key>Type</key>
++      <string>Boolean</string>
++      <key>Value</key>
++      <integer>1</integer>
++    </map>
++    <key>RenderAMDDisableTextureThreading</key>
++    <map>
++      <key>Comment</key>
++      <string>Force main-thread texture and media uploads on Windows AMD, regardless of the saved threading settings. Restart required. Disable to use RenderGLMultiThreadedTextures and RenderGLMultiThreadedMedia.</string>
++      <key>Persist</key>
++      <integer>1</integer>
++      <key>Type</key>
++      <string>Boolean</string>
++      <key>Value</key>
++      <integer>1</integer>
++    </map>
++    <key>RenderAMDDisableShaderCache</key>
++    <map>
++      <key>Comment</key>
++      <string>Bypass viewer shader binary caching on Windows AMD for shader experiments. Restart required. Disable to use RenderShaderCacheEnabled.</string>
++      <key>Persist</key>
++      <integer>1</integer>
++      <key>Type</key>
++      <string>Boolean</string>
++      <key>Value</key>
++      <integer>1</integer>
++    </map>
+     <key>RenderShaderCacheEnabled</key>
+     <map>
+       <key>Comment</key>
+diff --git a/indra/newview/app_settings/shaders/class1/avatar/avatarSkinV.glsl b/indra/newview/app_settings/shaders/class1/avatar/avatarSkinV.glsl
+index cdf6618..a330499 100644
+--- a/indra/newview/app_settings/shaders/class1/avatar/avatarSkinV.glsl
++++ b/indra/newview/app_settings/shaders/class1/avatar/avatarSkinV.glsl
+@@ -30,20 +30,33 @@ uniform vec4 matrixPalette[45];
+ 
+ mat4 getSkinnedTransform()
+ {
+-    mat4 ret;
++    SKIN_PRECISE mat4 ret;
+     int i = int(floor(weight.x));
+-    float x = fract(weight.x);
++    SKIN_PRECISE float x = fract(weight.x);
++
++    // Limit interpolation within the bounds of the matrix.
++    if (i < 0)
++    {
++        i = 0;
++        x = 0.0;
++    }
++    else if (i >= 14)
++    {
++        i = 13;
++        x = 1.0;
++    }
+ 
+     ret[0] = mix(matrixPalette[i+0], matrixPalette[i+1], x);
+     ret[1] = mix(matrixPalette[i+15],matrixPalette[i+16], x);
+     ret[2] = mix(matrixPalette[i+30],matrixPalette[i+31], x);
+     ret[3] = vec4(0,0,0,1);
+ 
+-    return ret;
+-
++// TODO: Consider if this hack is still necessary. Any driver could potentially optimize this out if the return is before the unreachable code or if the assigned variable is unused.
+ #ifdef IS_AMD_CARD
+     // If it's AMD make sure the GLSL compiler sees the arrays referenced once by static index. Otherwise it seems to optimise the storage awawy which leads to unfun crashes and artifacts.
+     vec4 dummy1 = matrixPalette[0];
+     vec4 dummy2 = matrixPalette[44];
+ #endif
++
++    return ret;
+ }
+diff --git a/indra/newview/app_settings/shaders/class1/avatar/avatarV.glsl b/indra/newview/app_settings/shaders/class1/avatar/avatarV.glsl
+index 1c3fdfe..fc6a7ee 100644
+--- a/indra/newview/app_settings/shaders/class1/avatar/avatarV.glsl
++++ b/indra/newview/app_settings/shaders/class1/avatar/avatarV.glsl
+@@ -35,6 +35,11 @@ out vec2 vary_texcoord0;
+ uniform vec4 color;
+ 
+ vec4 calcLighting(vec3 pos, vec3 norm, vec4 color);
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ mat4 getSkinnedTransform();
+ void calcAtmospherics(vec3 inPositionEye);
+ 
+diff --git a/indra/newview/app_settings/shaders/class1/avatar/objectSkinV.glsl b/indra/newview/app_settings/shaders/class1/avatar/objectSkinV.glsl
+index 755866e..026072a 100644
+--- a/indra/newview/app_settings/shaders/class1/avatar/objectSkinV.glsl
++++ b/indra/newview/app_settings/shaders/class1/avatar/objectSkinV.glsl
+@@ -25,82 +25,196 @@
+ in vec4 weight4;
+ 
+ uniform mat3x4 matrixPalette[MAX_JOINTS_PER_MESH_OBJECT];
++// Number of valid entries uploaded for this mesh.  This prevents malformed or
++// partially loaded rig weights from reading stale uniform-array entries.
++uniform int matrixPaletteSize;
++uniform vec3 skin_origin;
++uniform vec3 last_skin_origin;
+ uniform mat3x4 lastMatrixPalette[MAX_JOINTS_PER_MESH_OBJECT];
+ 
+-mat4 getObjectSkinnedTransform()
++mat3x4 getSkinBlend()
+ {
+-    int i;
+-
+-    vec4 w = fract(weight4);
++    SKIN_PRECISE vec4 w = fract(weight4);
+     vec4 index = floor(weight4);
+ 
+-    index = min(index, vec4(MAX_JOINTS_PER_MESH_OBJECT-1));
++    int last_palette_index = min(max(matrixPaletteSize - 1, 0), MAX_JOINTS_PER_MESH_OBJECT - 1);
++    index = min(index, vec4(float(last_palette_index)));
+     index = max(index, vec4( 0.0));
+ 
+-    w *= 1.0/(w.x+w.y+w.z+w.w);
++    SKIN_PRECISE float weight_sum = w.x + w.y + w.z + w.w;
++    if (weight_sum <= 0.00001)
++    {
++        // Broken/partially loaded weights must not turn the entire vertex into
++        // NaNs.  Keep it attached to the root joint until valid weights arrive.
++        w = vec4(1.0, 0.0, 0.0, 0.0);
++        index = vec4(0.0);
++        weight_sum = 1.0;
++    }
++    w *= 1.0 / weight_sum;
+ 
+     int i1 = int(index.x);
+     int i2 = int(index.y);
+     int i3 = int(index.z);
+     int i4 = int(index.w);
+ 
+-    mat3 mat = mat3(matrixPalette[i1])*w.x;
++    SKIN_PRECISE mat3 mat = mat3(matrixPalette[i1])*w.x;
+          mat += mat3(matrixPalette[i2])*w.y;
+          mat += mat3(matrixPalette[i3])*w.z;
+          mat += mat3(matrixPalette[i4])*w.w;
+ 
+-    vec3 trans = vec3(matrixPalette[i1][0].w,matrixPalette[i1][1].w,matrixPalette[i1][2].w)*w.x;
++    SKIN_PRECISE vec3 trans = vec3(matrixPalette[i1][0].w,matrixPalette[i1][1].w,matrixPalette[i1][2].w)*w.x;
+          trans += vec3(matrixPalette[i2][0].w,matrixPalette[i2][1].w,matrixPalette[i2][2].w)*w.y;
+          trans += vec3(matrixPalette[i3][0].w,matrixPalette[i3][1].w,matrixPalette[i3][2].w)*w.z;
+          trans += vec3(matrixPalette[i4][0].w,matrixPalette[i4][1].w,matrixPalette[i4][2].w)*w.w;
+ 
+-    mat4 ret;
+-
+-    ret[0] = vec4(mat[0], 0);
+-    ret[1] = vec4(mat[1], 0);
+-    ret[2] = vec4(mat[2], 0);
+-    ret[3] = vec4(trans, 1.0);
+-
+-    return ret;
++    SKIN_PRECISE mat3x4 ret;
++    ret[0] = vec4(mat[0], trans.x);
++    ret[1] = vec4(mat[1], trans.y);
++    ret[2] = vec4(mat[2], trans.z);
+ 
++// TODO: Consider if this hack is still necessary. Any driver could potentially optimize this out if the return is before the unreachable code or if the assigned variable is unused.
+ #ifdef IS_AMD_CARD
+    // If it's AMD make sure the GLSL compiler sees the arrays referenced once by static index. Otherwise it seems to optimise the storage awawy which leads to unfun crashes and artifacts.
+    mat3x4 dummy1 = matrixPalette[0];
+    mat3x4 dummy2 = matrixPalette[MAX_JOINTS_PER_MESH_OBJECT-1];
+ #endif
+ 
++    return ret;
+ }
+ 
+-mat4 getLastObjectSkinnedTransform()
++vec3 skinDirection(mat3x4 skin, vec3 direction)
++{
++    SKIN_PRECISE vec3 result = mat3(skin) * direction;
++    return result;
++}
++
++vec3 skinPoint(mat3x4 skin, vec3 position)
++{
++    SKIN_PRECISE vec3 result = mat3(skin) * position + vec3(skin[0].w, skin[1].w, skin[2].w);
++    return result;
++}
++
++mat4 skinMatrix(mat3x4 skin)
++{
++    SKIN_PRECISE mat4 result;
++    result[0] = vec4(skin[0].xyz, 0.0);
++    result[1] = vec4(skin[1].xyz, 0.0);
++    result[2] = vec4(skin[2].xyz, 0.0);
++    result[3] = vec4(skinPoint(skin, vec3(0.0)) + skin_origin, 1.0);
++    return result;
++}
++
++vec4 skinTransformH(mat3x4 skin, vec3 position, mat4 transform)
++{
++#ifdef RIGGED_LOCAL_ORIGIN
++    // Keep origin cancellation separate from the small local vertex position.
++    SKIN_PRECISE vec4 local_position = transform * vec4(skinPoint(skin, position), 0.0);
++    SKIN_PRECISE vec4 origin = transform * vec4(skin_origin, 1.0);
++    SKIN_PRECISE vec4 result = local_position + origin;
++#else
++    // Comparison path: blend agent-space translations and compose the matrices
++    // before transforming the vertex, as before the local-origin experiment.
++    SKIN_PRECISE mat4 matrix = transform * skinMatrix(skin);
++    SKIN_PRECISE vec4 result = matrix * vec4(position, 1.0);
++#endif
++    return result;
++}
++
++vec3 skinNormal(mat3x4 skin, vec3 position, vec3 direction, mat4 transform)
++{
++#ifdef RIGGED_DIRECT_NORMALS
++    SKIN_PRECISE vec3 result = mat3(transform) * skinDirection(skin, direction);
++#else
++    // Deliberately retain point subtraction for the normal-precision A/B test.
++    SKIN_PRECISE vec3 endpoint = position + direction;
++    SKIN_PRECISE vec3 result = skinTransformH(skin, endpoint, transform).xyz
++        - skinTransformH(skin, position, transform).xyz;
++#endif
++    return result;
++}
++
++mat4 getObjectSkinnedTransform()
++{
++    return skinMatrix(getSkinBlend());
++}
++
++mat3x4 getLastSkinBlend()
+ {
+-    vec4 w = fract(weight4);
++    SKIN_PRECISE vec4 w = fract(weight4);
+     vec4 index = floor(weight4);
+ 
+-    index = min(index, vec4(MAX_JOINTS_PER_MESH_OBJECT-1));
+-    index = max(index, vec4(0.0));
++    int last_palette_index = min(max(matrixPaletteSize - 1, 0), MAX_JOINTS_PER_MESH_OBJECT - 1);
++    index = min(index, vec4(float(last_palette_index)));
++    index = max(index, vec4( 0.0));
+ 
+-    w *= 1.0/(w.x+w.y+w.z+w.w);
++    SKIN_PRECISE float weight_sum = w.x + w.y + w.z + w.w;
++    if (weight_sum <= 0.00001)
++    {
++        // Broken/partially loaded weights must not turn the entire vertex into
++        // NaNs.  Keep it attached to the root joint until valid weights arrive.
++        w = vec4(1.0, 0.0, 0.0, 0.0);
++        index = vec4(0.0);
++        weight_sum = 1.0;
++    }
++    w *= 1.0 / weight_sum;
+ 
+     int i1 = int(index.x);
+     int i2 = int(index.y);
+     int i3 = int(index.z);
+     int i4 = int(index.w);
+ 
+-    mat3 mat = mat3(lastMatrixPalette[i1])*w.x;
++    SKIN_PRECISE mat3 mat = mat3(lastMatrixPalette[i1])*w.x;
+          mat += mat3(lastMatrixPalette[i2])*w.y;
+          mat += mat3(lastMatrixPalette[i3])*w.z;
+          mat += mat3(lastMatrixPalette[i4])*w.w;
+ 
+-    vec3 trans = vec3(lastMatrixPalette[i1][0].w, lastMatrixPalette[i1][1].w, lastMatrixPalette[i1][2].w)*w.x;
+-         trans += vec3(lastMatrixPalette[i2][0].w, lastMatrixPalette[i2][1].w, lastMatrixPalette[i2][2].w)*w.y;
+-         trans += vec3(lastMatrixPalette[i3][0].w, lastMatrixPalette[i3][1].w, lastMatrixPalette[i3][2].w)*w.z;
+-         trans += vec3(lastMatrixPalette[i4][0].w, lastMatrixPalette[i4][1].w, lastMatrixPalette[i4][2].w)*w.w;
++    SKIN_PRECISE vec3 trans = vec3(lastMatrixPalette[i1][0].w,lastMatrixPalette[i1][1].w,lastMatrixPalette[i1][2].w)*w.x;
++         trans += vec3(lastMatrixPalette[i2][0].w,lastMatrixPalette[i2][1].w,lastMatrixPalette[i2][2].w)*w.y;
++         trans += vec3(lastMatrixPalette[i3][0].w,lastMatrixPalette[i3][1].w,lastMatrixPalette[i3][2].w)*w.z;
++         trans += vec3(lastMatrixPalette[i4][0].w,lastMatrixPalette[i4][1].w,lastMatrixPalette[i4][2].w)*w.w;
++
++    SKIN_PRECISE mat3x4 ret;
++    ret[0] = vec4(mat[0], trans.x);
++    ret[1] = vec4(mat[1], trans.y);
++    ret[2] = vec4(mat[2], trans.z);
+ 
+-    mat4 ret;
+-    ret[0] = vec4(mat[0], 0);
+-    ret[1] = vec4(mat[1], 0);
+-    ret[2] = vec4(mat[2], 0);
+-    ret[3] = vec4(trans, 1.0);
++// TODO: Consider if this hack is still necessary. Any driver could potentially optimize this out if the return is before the unreachable code or if the assigned variable is unused.
++#ifdef IS_AMD_CARD
++   // If it's AMD make sure the GLSL compiler sees the arrays referenced once by static index. Otherwise it seems to optimise the storage awawy which leads to unfun crashes and artifacts.
++   mat3x4 dummy1 = lastMatrixPalette[0];
++   mat3x4 dummy2 = lastMatrixPalette[MAX_JOINTS_PER_MESH_OBJECT-1];
++#endif
+ 
+     return ret;
+ }
++
++mat4 lastSkinMatrix(mat3x4 skin)
++{
++    SKIN_PRECISE mat4 result;
++    result[0] = vec4(skin[0].xyz, 0.0);
++    result[1] = vec4(skin[1].xyz, 0.0);
++    result[2] = vec4(skin[2].xyz, 0.0);
++    result[3] = vec4(skinPoint(skin, vec3(0.0)) + last_skin_origin, 1.0);
++    return result;
++}
++
++vec4 lastSkinTransformH(mat3x4 skin, vec3 position, mat4 transform)
++{
++#ifdef RIGGED_LOCAL_ORIGIN
++    // Keep origin cancellation separate from the small local vertex position.
++    SKIN_PRECISE vec4 local_position = transform * vec4(skinPoint(skin, position), 0.0);
++    SKIN_PRECISE vec4 origin = transform * vec4(last_skin_origin, 1.0);
++    SKIN_PRECISE vec4 result = local_position + origin;
++#else
++    // Comparison path: blend agent-space translations and compose the matrices
++    // before transforming the vertex, as before the local-origin experiment.
++    SKIN_PRECISE mat4 matrix = transform * lastSkinMatrix(skin);
++    SKIN_PRECISE vec4 result = matrix * vec4(position, 1.0);
++#endif
++    return result;
++}
++
++mat4 getLastObjectSkinnedTransform()
++{
++    return lastSkinMatrix(getLastSkinBlend());
++}
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/CASF.glsl b/indra/newview/app_settings/shaders/class1/deferred/CASF.glsl
+index 8e12d09..02d3d8e 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/CASF.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/CASF.glsl
+@@ -2064,7 +2064,7 @@ A_STATIC void CasSetup(
+ //                                                     NON-PACKED VERSION
+ //==============================================================================================================================
+ #ifdef A_GPU
+- AF3 CasLoad(ASU2 p) { return texelFetch(diffuseRect, p, 0).rgb; }
++ AF3 CasLoad(ASU2 p) { return texelFetch(diffuseRect, clamp(p, ASU2(0), textureSize(diffuseRect, 0) - ASU2(1)), 0).rgb; }
+  void CasInput(inout AF1 r,inout AF1 g,inout AF1 b)
+  {
+  }
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/SMAA.glsl b/indra/newview/app_settings/shaders/class1/deferred/SMAA.glsl
+index cca49d1..33670e0 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/SMAA.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/SMAA.glsl
+@@ -1373,7 +1373,6 @@ float4 SMAANeighborhoodBlendingPS(float2 texcoord,
+     SMAA_BRANCH
+     if (dot(a, float4(1.0, 1.0, 1.0, 1.0)) < 1e-5) {
+         float4 color = SMAASampleLevelZero(colorTex, texcoord);
+-        color.rgb = srgb_to_linear(color.rgb);
+ 
+         #if SMAA_REPROJECTION
+         float2 velocity = SMAA_DECODE_VELOCITY(SMAASampleLevelZero(velocityTex, texcoord));
+@@ -1382,7 +1381,6 @@ float4 SMAANeighborhoodBlendingPS(float2 texcoord,
+         color.a = sqrt(5.0 * length(velocity));
+         #endif
+ 
+-        color.rgb = linear_to_srgb(color.rgb);
+         return color;
+     } else {
+         bool h = max(a.x, a.z) > max(a.y, a.w); // max(horizontal) > max(vertical)
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/SMAAResolveF.glsl b/indra/newview/app_settings/shaders/class1/deferred/SMAAResolveF.glsl
+new file mode 100644
+index 0000000..8032eb2
+--- /dev/null
++++ b/indra/newview/app_settings/shaders/class1/deferred/SMAAResolveF.glsl
+@@ -0,0 +1,52 @@
++/**
++ * @file SMAAResolveF.glsl
++ *
++ * $LicenseInfo:firstyear=2024&license=viewerlgpl$
++ * Second Life Viewer Source Code
++ * Copyright (C) 2024, Linden Research, Inc.
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation;
++ * version 2.1 of the License only.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with this library; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
++ *
++ * Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
++ * $/LicenseInfo$
++ */
++
++/*[EXTRA_CODE_HERE]*/
++
++out vec4 frag_color;
++in vec2 vary_texcoord0;
++
++uniform sampler2D currentColorTex;
++uniform sampler2D previousColorTex;
++#if SMAA_REPROJECTION
++uniform sampler2D velocityTex;
++#endif
++
++vec4 SMAAResolvePS(vec2 texcoord,
++                   sampler2D currentColorTex,
++                   sampler2D previousColorTex
++#if SMAA_REPROJECTION
++                   , sampler2D velocityTex
++#endif
++                   );
++
++void main()
++{
++    frag_color = SMAAResolvePS(vary_texcoord0, currentColorTex, previousColorTex
++#if SMAA_REPROJECTION
++                              , velocityTex
++#endif
++                              );
++}
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/SMAAResolveV.glsl b/indra/newview/app_settings/shaders/class1/deferred/SMAAResolveV.glsl
+new file mode 100644
+index 0000000..e7e7435
+--- /dev/null
++++ b/indra/newview/app_settings/shaders/class1/deferred/SMAAResolveV.glsl
+@@ -0,0 +1,35 @@
++/**
++ * @file SMAAResolveV.glsl
++ *
++ * $LicenseInfo:firstyear=2024&license=viewerlgpl$
++ * Second Life Viewer Source Code
++ * Copyright (C) 2024, Linden Research, Inc.
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation;
++ * version 2.1 of the License only.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with this library; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
++ *
++ * Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
++ * $/LicenseInfo$
++ */
++
++/*[EXTRA_CODE_HERE]*/
++
++in vec3 position;
++out vec2 vary_texcoord0;
++
++void main()
++{
++    gl_Position = vec4(position.xyz, 1.0);
++    vary_texcoord0 = gl_Position.xy * 0.5 + 0.5;
++}
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/alphaV.glsl b/indra/newview/app_settings/shaders/class1/deferred/alphaV.glsl
+index 799b876..1235b18 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/alphaV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/alphaV.glsl
+@@ -23,6 +23,11 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ #define INDEXED 1
+ #define NON_INDEXED 2
+ #define NON_INDEXED_NO_COLOR 3
+@@ -48,7 +53,9 @@ in vec4 diffuse_color;
+ in vec2 texcoord0;
+ 
+ #ifdef HAS_SKIN
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec3 skinNormal(mat3x4 b, vec3 pos, vec3 dir, mat4 m);
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ #else
+ #ifdef IS_AVATAR_SKIN
+ mat4 getSkinnedTransform();
+@@ -74,13 +81,9 @@ void main()
+ 
+     //transform vertex
+ #ifdef HAS_SKIN
+-    mat4 trans = getObjectSkinnedTransform();
+-    trans = modelview_matrix * trans;
+-
+-    pos = trans * vec4(position.xyz, 1.0);
+-
+-    norm = position.xyz + normal.xyz;
+-    norm = normalize((trans * vec4(norm, 1.0)).xyz - pos.xyz);
++    mat3x4 skin = getSkinBlend();
++    pos = skinTransformH(skin, position.xyz, modelview_matrix);
++    norm = normalize(skinNormal(skin, position.xyz, normal.xyz, modelview_matrix));
+     vec4 frag_pos = projection_matrix * pos;
+     gl_Position = frag_pos;
+ #else
+@@ -136,4 +139,3 @@ void main()
+ #endif
+ 
+ }
+-
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/aoUtil.glsl b/indra/newview/app_settings/shaders/class1/deferred/aoUtil.glsl
+index 945b211..4450953 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/aoUtil.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/aoUtil.glsl
+@@ -202,7 +202,7 @@ float calcAmbientOcclusion(vec4 pos, vec3 norm, vec2 pos_screen)
+         vec3 samppos_world = getPositionAo(samppos_screen).xyz;
+ 
+         vec3 diff = pos_world - samppos_world;
+-        float dist2 = dot(diff, diff);
++        float dist2 = max(dot(diff, diff), 1e-8);
+ 
+         // assume each sample corresponds to an occluding sphere with constant radius, constant x-sectional area
+         // --> solid angle shrinking by the square of distance
+@@ -217,6 +217,10 @@ float calcAmbientOcclusion(vec4 pos, vec3 norm, vec2 pos_screen)
+         points = points + diffz_val;
+     }
+ 
++    if (points <= 0.0)
++    {
++        return 1.0;
++    }
+     angle_hidden = min(ssao_factor*angle_hidden/points, 1.0);
+ 
+     float points_val = (points > 0.0) ? 1.0 : 0.0;
+@@ -225,4 +229,3 @@ float calcAmbientOcclusion(vec4 pos, vec3 norm, vec2 pos_screen)
+     ret = max(ret, 0.0);
+     return min(ret, 1.0);
+ }
+-
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/avatarAlphaShadowV.glsl b/indra/newview/app_settings/shaders/class1/deferred/avatarAlphaShadowV.glsl
+index 8d32dab..8dbc204 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/avatarAlphaShadowV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/avatarAlphaShadowV.glsl
+@@ -27,6 +27,11 @@ uniform mat4 texture_matrix0;
+ uniform mat4 projection_matrix;
+ uniform float shadow_target_width;
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ mat4 getSkinnedTransform();
+ void passTextureIndex();
+ 
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/avatarShadowV.glsl b/indra/newview/app_settings/shaders/class1/deferred/avatarShadowV.glsl
+index 95db062..c5b38e0 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/avatarShadowV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/avatarShadowV.glsl
+@@ -25,6 +25,11 @@
+ 
+ uniform mat4 projection_matrix;
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ mat4 getSkinnedTransform();
+ 
+ in vec3 position;
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/avatarV.glsl b/indra/newview/app_settings/shaders/class1/deferred/avatarV.glsl
+index 1b12337..397fb8e 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/avatarV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/avatarV.glsl
+@@ -32,6 +32,11 @@ in vec2 texcoord0;
+ in vec4 clothing;
+ #endif
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ mat4 getSkinnedTransform();
+ 
+ in vec4 weight;
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/bumpF.glsl b/indra/newview/app_settings/shaders/class1/deferred/bumpF.glsl
+index a2341a8..cd2540c 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/bumpF.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/bumpF.glsl
+@@ -41,29 +41,32 @@ in vec3 vary_position;
+ 
+ void mirrorClip(vec3 pos);
+ vec4 encodeNormal(vec3 n, float env, float gbuffer_flag);
++float filterSpecularRoughness(float perceptualRoughness, vec3 n);
+ 
+ void main()
+ {
+-    mirrorClip(vary_position);
+-
+     vec4 col = texture(diffuseMap, vary_texcoord0.xy);
+ 
+-    if(col.a < minimum_alpha)
+-    {
+-        discard;
+-    }
+-    col *= vertex_color;
+-
+     vec3 norm = texture(bumpMap, vary_texcoord0.xy).rgb * 2.0 - 1.0;
+ 
+     vec3 tnorm = vec3(dot(norm,vary_mat0),
+             dot(norm,vary_mat1),
+             dot(norm,vary_mat2));
+ 
++    vec3 nvn = normalize(tnorm);
++    float glossiness = 1.0 - filterSpecularRoughness(1.0 - vertex_color.a, nvn);
++
++    // Evaluate normal derivatives before any potentially non-uniform discard.
++    mirrorClip(vary_position);
++    if (col.a < minimum_alpha)
++    {
++        discard;
++    }
++    col *= vertex_color;
++
+     frag_data[0] = vec4(col.rgb, 0.0);
+-    frag_data[1] = vertex_color.aaaa; // spec
++    frag_data[1] = vec4(vertex_color.aaa, glossiness); // spec
+     //frag_data[1] = vec4(vec3(vertex_color.a), vertex_color.a+(1.0-vertex_color.a)*vertex_color.a); // spec - from former class3 - maybe better, but not so well tested
+-    vec3 nvn = normalize(tnorm);
+     frag_data[2] = encodeNormal(nvn, vertex_color.a, GBUFFER_FLAG_HAS_ATMOS);
+ 
+ #if defined(HAS_EMISSIVE)
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/bumpV.glsl b/indra/newview/app_settings/shaders/class1/deferred/bumpV.glsl
+index a381392..a16463d 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/bumpV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/bumpV.glsl
+@@ -23,6 +23,11 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ uniform mat4 modelview_matrix;
+ uniform mat3 normal_matrix;
+ uniform mat4 texture_matrix0;
+@@ -42,7 +47,9 @@ out vec2 vary_texcoord0;
+ out vec3 vary_position;
+ 
+ #ifdef HAS_SKIN
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec3 skinNormal(mat3x4 b, vec3 pos, vec3 dir, mat4 m);
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ uniform mat4 projection_matrix;
+ #endif
+ 
+@@ -50,14 +57,13 @@ void main()
+ {
+     //transform vertex
+ #ifdef HAS_SKIN
+-    mat4 mat = getObjectSkinnedTransform();
+-    mat = modelview_matrix * mat;
+-    vec3 pos = (mat*vec4(position.xyz, 1.0)).xyz;
++    mat3x4 skin = getSkinBlend();
++    vec3 pos = skinTransformH(skin, position.xyz, modelview_matrix).xyz;
+     vary_position = pos;
+     gl_Position = projection_matrix*vec4(pos, 1.0);
+ 
+-    vec3 n = normalize((mat * vec4(normal.xyz+position.xyz, 1.0)).xyz-pos.xyz);
+-    vec3 t = normalize((mat * vec4(tangent.xyz+position.xyz, 1.0)).xyz-pos.xyz);
++    vec3 n = normalize(skinNormal(skin, position.xyz, normal.xyz, modelview_matrix));
++    vec3 t = normalize(skinNormal(skin, position.xyz, tangent.xyz, modelview_matrix));
+ #else
+     vary_position = (modelview_matrix*vec4(position.xyz, 1.0)).xyz;
+     gl_Position = modelview_projection_matrix * vec4(position.xyz, 1.0);
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/cloudsF.glsl b/indra/newview/app_settings/shaders/class1/deferred/cloudsF.glsl
+index 8c51b4a..95de10f 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/cloudsF.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/cloudsF.glsl
+@@ -50,6 +50,11 @@ in float altitude_blend_factor;
+ 
+ vec4 cloudNoise(vec2 uv)
+ {
++   // blend_factor is uniform: endpoint skies need only one texture lookup.
++   if (blend_factor <= 0.0)
++       return texture(cloud_noise_texture, uv);
++   if (blend_factor >= 1.0)
++       return texture(cloud_noise_texture_next, uv);
+    vec4 a = texture(cloud_noise_texture, uv);
+    vec4 b = texture(cloud_noise_texture_next, uv);
+    vec4 cloud_noise_sample = mix(a, b, blend_factor);
+@@ -125,4 +130,3 @@ void main()
+     frag_data[0] = vec4(color.rgb, alpha1);
+ #endif
+ }
+-
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/deferredUtil.glsl b/indra/newview/app_settings/shaders/class1/deferred/deferredUtil.glsl
+index dba9c46..260a578 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/deferredUtil.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/deferredUtil.glsl
+@@ -114,17 +114,18 @@ float calcLegacyDistanceAttenuation(float distance, float falloff)
+ void calcHalfVectors(vec3 lv, vec3 n, vec3 v,
+     out vec3 h, out vec3 l, out float nh, out float nl, out float nv, out float vh, out float lightDist)
+ {
+-    l  = normalize(lv);
+-    h  = normalize(l + v);
++    lightDist = length(lv);
++    l = lv / max(lightDist, 1e-8);
++    vec3 halfVector = l + v;
++    h = halfVector * inversesqrt(max(dot(halfVector, halfVector), 1e-8));
+ 
+     // lower bound to avoid divide by zero
+     float eps = 0.000001;
+     nh = clamp(dot(n, h), eps, 1.0);
+-    nl = clamp(dot(n, l), eps, 1.0);
++    nl = clamp(dot(n, l), 0.0, 1.0); // Keep back-facing light contribution at zero.
+     nv = clamp(dot(n, v), eps, 1.0);
+     vh = clamp(dot(v, h), eps, 1.0);
+ 
+-    lightDist = length(lv);
+ }
+ 
+ // In:
+@@ -478,11 +479,19 @@ void pbrPunctual(vec3 diffuseColor, vec3 specularColor,
+     vec3 specularEnvironmentR0 = specularColor.rgb;
+     vec3 specularEnvironmentR90 = vec3(1.0, 1.0, 1.0) * reflectance90;
+ 
+-    vec3 h = normalize(l+v);                        // Half vector between both l and v
++    nl = clamp(dot(n, l), 0.0, 1.0);
++    diff = vec3(0);
++    spec = vec3(0);
++    if (nl <= 0.0)
++    {
++        return;
++    }
++    vec3 halfVector = l + v;
++    vec3 h = halfVector * inversesqrt(max(dot(halfVector, halfVector), 1e-8));
+     vec3 reflection = -normalize(reflect(v, n));
+     reflection.y *= -1.0f;
+ 
+-    float NdotL = clamp(dot(n, l), 0.001, 1.0);
++    float NdotL = max(nl, 0.001); // Epsilon protects BRDF denominators only.
+     float NdotV = clamp(abs(dot(n, v)), 0.001, 1.0);
+     float NdotH = clamp(dot(n, h), 0.0, 1.0);
+     float LdotH = clamp(dot(l, h), 0.0, 1.0);
+@@ -512,8 +521,6 @@ void pbrPunctual(vec3 diffuseColor, vec3 specularColor,
+     vec3 diffuseContrib = (1.0 - F) * diffuse(pbrInputs);
+     vec3 specContrib = F * G * D / (4.0 * NdotL * NdotV);
+ 
+-    nl = NdotL;
+-
+     diff = diffuseContrib;
+     spec = specContrib;
+ }
+@@ -538,7 +545,7 @@ vec3 pbrCalcPointLightOrSpotLight(vec3 diffuseColor, vec3 specularColor,
+     float dist = lightDist / lightSize;
+     if (dist <= 1.0)
+     {
+-        lv /= lightDist;
++        lv /= max(lightDist, 1e-8);
+ 
+         float dist_atten = calcLegacyDistanceAttenuation(dist, falloff);
+ 
+@@ -547,7 +554,7 @@ vec3 pbrCalcPointLightOrSpotLight(vec3 diffuseColor, vec3 specularColor,
+         // spot*spot => GL_SPOT_EXPONENT=2
+         float spot_atten = spot*spot;
+ 
+-        vec3 intensity = spot_atten * dist_atten * lightColor * 3.0; //magic number to balance with legacy materials
++        vec3 intensity = spot_atten * dist_atten * lightColor * 3.25; // Match deferred PBR light intensity.
+ 
+         float nl = 0;
+         vec3 diffPunc = vec3(0);
+@@ -645,4 +652,3 @@ void waterClip(vec3 pos)
+     }
+ 
+ }
+-
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/diffuseV.glsl b/indra/newview/app_settings/shaders/class1/deferred/diffuseV.glsl
+index 4bd31ce..dd42282 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/diffuseV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/diffuseV.glsl
+@@ -23,6 +23,11 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ uniform mat3 normal_matrix;
+ uniform mat4 texture_matrix0;
+ uniform mat4 modelview_projection_matrix;
+@@ -43,7 +48,9 @@ void passTextureIndex();
+ uniform mat4 modelview_matrix;
+ 
+ #ifdef HAS_SKIN
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec3 skinNormal(mat3x4 b, vec3 pos, vec3 dir, mat4 m);
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ uniform mat4 projection_matrix;
+ 
+ #endif
+@@ -51,12 +58,11 @@ uniform mat4 projection_matrix;
+ void main()
+ {
+ #ifdef HAS_SKIN
+-    mat4 mat = getObjectSkinnedTransform();
+-    mat = modelview_matrix * mat;
+-    vec4 pos = mat * vec4(position.xyz, 1.0);
++    mat3x4 skin = getSkinBlend();
++    vec4 pos = skinTransformH(skin, position.xyz, modelview_matrix);
+     vary_position = pos.xyz;
+     gl_Position = projection_matrix * pos;
+-    vary_normal = normalize((mat*vec4(normal.xyz+position.xyz,1.0)).xyz-pos.xyz);
++    vary_normal = normalize(skinNormal(skin, position.xyz, normal.xyz, modelview_matrix));
+ #else
+     vary_position = (modelview_matrix * vec4(position.xyz, 1.0)).xyz;
+     gl_Position = modelview_projection_matrix * vec4(position.xyz, 1.0);
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/emissiveV.glsl b/indra/newview/app_settings/shaders/class1/deferred/emissiveV.glsl
+index fc8f873..3167a22 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/emissiveV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/emissiveV.glsl
+@@ -23,6 +23,11 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ uniform mat4 texture_matrix0;
+ uniform mat4 modelview_matrix;
+ uniform mat4 modelview_projection_matrix;
+@@ -41,7 +46,8 @@ out vec4 vertex_color;
+ out vec2 vary_texcoord0;
+ 
+ #ifdef HAS_SKIN
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ uniform mat4 projection_matrix;
+ #endif
+ 
+@@ -51,10 +57,7 @@ void main()
+     passTextureIndex();
+ 
+ #ifdef HAS_SKIN
+-    mat4 mat = getObjectSkinnedTransform();
+-    mat = modelview_matrix * mat;
+-
+-    vec4 pos = mat * vec4(position.xyz, 1.0);
++    vec4 pos = skinTransformH(getSkinBlend(), position.xyz, modelview_matrix);
+     gl_Position = projection_matrix * pos;
+ #else
+     gl_Position = modelview_projection_matrix * vec4(position.xyz, 1.0);
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/fullbrightShinyV.glsl b/indra/newview/app_settings/shaders/class1/deferred/fullbrightShinyV.glsl
+index 3b55c46..9a71c46 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/fullbrightShinyV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/fullbrightShinyV.glsl
+@@ -23,6 +23,11 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ uniform mat3 normal_matrix;
+ uniform mat4 texture_matrix0;
+ uniform mat4 texture_matrix1;
+@@ -48,7 +53,9 @@ out vec3 vary_texcoord1;
+ out vec3 vary_position;
+ 
+ #ifdef HAS_SKIN
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec3 skinNormal(mat3x4 b, vec3 pos, vec3 dir, mat4 m);
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ uniform mat4 projection_matrix;
+ #endif
+ 
+@@ -59,11 +66,10 @@ void main()
+     passTextureIndex();
+ 
+ #ifdef HAS_SKIN
+-    mat4 mat = getObjectSkinnedTransform();
+-    mat = modelview_matrix * mat;
+-    vec4 pos = mat * vert;
++    mat3x4 skin = getSkinBlend();
++    vec4 pos = skinTransformH(skin, vert.xyz, modelview_matrix);
+     gl_Position = projection_matrix * pos;
+-    vec3 norm = normalize((mat*vec4(normal.xyz+position.xyz,1.0)).xyz-pos.xyz);
++    vec3 norm = normalize(skinNormal(skin, position.xyz, normal.xyz, modelview_matrix));
+ #else
+     vec4 pos = (modelview_matrix * vert);
+     gl_Position = modelview_projection_matrix*vec4(position.xyz, 1.0);
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/fullbrightV.glsl b/indra/newview/app_settings/shaders/class1/deferred/fullbrightV.glsl
+index 9304ed6..2a0806a 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/fullbrightV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/fullbrightV.glsl
+@@ -23,6 +23,11 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ uniform mat4 texture_matrix0;
+ uniform mat4 modelview_matrix;
+ uniform mat4 modelview_projection_matrix;
+@@ -44,7 +49,8 @@ out vec4 vertex_color;
+ out vec2 vary_texcoord0;
+ 
+ #ifdef HAS_SKIN
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ uniform mat4 projection_matrix;
+ #endif
+ 
+@@ -55,9 +61,7 @@ void main()
+     passTextureIndex();
+ 
+ #ifdef HAS_SKIN
+-    mat4 mat = getObjectSkinnedTransform();
+-    mat = modelview_matrix * mat;
+-    vec4 pos = mat * vert;
++    vec4 pos = skinTransformH(getSkinBlend(), vert.xyz, modelview_matrix);
+     gl_Position = projection_matrix * pos;
+ #else
+     vec4 pos = (modelview_matrix * vert);
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/globalF.glsl b/indra/newview/app_settings/shaders/class1/deferred/globalF.glsl
+index eeb52dd..49cef3d 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/globalF.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/globalF.glsl
+@@ -45,21 +45,52 @@ void mirrorClip(vec3 pos)
+ 
+ vec4 encodeNormal(vec3 n, float env, float gbuffer_flag)
+ {
+-    float f = sqrt(8 * n.z + 8);
+-    return vec4(n.xy / f + 0.5, env, gbuffer_flag);
++    // The equivalent polar form avoids cancellation in 1 + z near the south pole.
++    float z = clamp(n.z, -1.0, 1.0);
++    vec2 encoded;
++    if (z < 0.0)
++    {
++        float xy2 = dot(n.xy, n.xy);
++        vec2 direction = xy2 > 0.0 ? n.xy * inversesqrt(xy2) : vec2(1.0, 0.0);
++        encoded = direction * sqrt((1.0 - z) * 0.125);
++    }
++    else
++    {
++        encoded = n.xy / sqrt(8.0 * z + 8.0);
++    }
++    return vec4(encoded + 0.5, env, gbuffer_flag);
+ }
+ 
+ vec4 decodeNormal(vec4 norm)
+ {
+     vec2 fenc = norm.xy*4-2;
+-    float f = dot(fenc,fenc);
+-    float g = sqrt(1-f/4);
++    // UNORM quantization can put an encoded south-pole normal outside the disk.
++    float f = min(dot(fenc,fenc), 4.0);
++    float g = sqrt(max(1-f/4, 0.0));
+     vec4 n;
+     n.xy = fenc*g;
+     n.z = 1-f/2;
++    n.w = norm.w;
+     return n;
+ }
+ 
++// Widen a specular lobe by the normal variation lost when a normal map is filtered to a pixel.
++// Without this, the averaged normal still uses the authored sharp lobe and highlights can
++// collapse into isolated bright pixels as the camera moves across a rigged avatar.
++float filterSpecularRoughness(float perceptualRoughness, vec3 n)
++{
++    const float SPEC_AA_VARIANCE  = 0.15;
++    const float SPEC_AA_THRESHOLD = 0.25;
++
++    vec3 du = dFdx(n);
++    vec3 dv = dFdy(n);
++    float variance = SPEC_AA_VARIANCE * (dot(du, du) + dot(dv, dv));
++    float kernel = min(2.0 * variance, SPEC_AA_THRESHOLD);
++
++    float alpha = perceptualRoughness * perceptualRoughness;
++    return sqrt(sqrt(clamp(alpha * alpha + kernel, 0.0, 1.0)));
++}
++
+ // 4x4 Bayer dither matrix normalized to [0, 1]
+ const float BAYER_PATTERN[16] = float[16](
+      0.0/16.0,  8.0/16.0,  2.0/16.0, 10.0/16.0,
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/materialV.glsl b/indra/newview/app_settings/shaders/class1/deferred/materialV.glsl
+index b6528df..1e8747e 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/materialV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/materialV.glsl
+@@ -23,6 +23,11 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ #define DIFFUSE_ALPHA_MODE_IGNORE 0
+ #define DIFFUSE_ALPHA_MODE_BLEND 1
+ #define DIFFUSE_ALPHA_MODE_MASK 2
+@@ -33,7 +38,9 @@ uniform mat4 projection_matrix;
+ uniform mat4 modelview_projection_matrix;
+ 
+ #ifdef HAS_SKIN
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec3 skinNormal(mat3x4 b, vec3 pos, vec3 dir, mat4 m);
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ #else
+ uniform mat3 normal_matrix;
+ #endif
+@@ -72,11 +79,8 @@ out vec2 vary_texcoord0;
+ void main()
+ {
+ #ifdef HAS_SKIN
+-    mat4 mat = getObjectSkinnedTransform();
+-
+-    mat = modelview_matrix * mat;
+-
+-    vec3 pos = (mat*vec4(position.xyz,1.0)).xyz;
++    mat3x4 skin = getSkinBlend();
++    vec3 pos = skinTransformH(skin, position.xyz, modelview_matrix).xyz;
+ 
+     vary_position = pos;
+ 
+@@ -99,9 +103,9 @@ void main()
+ #endif
+ 
+ #ifdef HAS_SKIN
+-    vec3 n = normalize((mat*vec4(normal.xyz+position.xyz,1.0)).xyz-pos.xyz);
++    vec3 n = normalize(skinNormal(skin, position.xyz, normal.xyz, modelview_matrix));
+ #ifdef HAS_NORMAL_MAP
+-    vec3 t = normalize((mat*vec4(tangent.xyz+position.xyz,1.0)).xyz-pos.xyz);
++    vec3 t = normalize(skinNormal(skin, position.xyz, tangent.xyz, modelview_matrix));
+ 
+     vary_tangent = t;
+     vary_sign = tangent.w;
+@@ -128,4 +132,3 @@ void main()
+     vary_position = (modelview_matrix*vec4(position.xyz, 1.0)).xyz;
+ #endif
+ }
+-
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/pbrShadowAlphaMaskV.glsl b/indra/newview/app_settings/shaders/class1/deferred/pbrShadowAlphaMaskV.glsl
+index 0cfe3c9..a5e75ab 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/pbrShadowAlphaMaskV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/pbrShadowAlphaMaskV.glsl
+@@ -23,11 +23,17 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ uniform mat4 texture_matrix0;
+ #if defined(HAS_SKIN)
+ uniform mat4 modelview_matrix;
+ uniform mat4 projection_matrix;
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ #else
+ uniform mat4 modelview_projection_matrix;
+ #endif
+@@ -52,10 +58,7 @@ void main()
+ {
+     //transform vertex
+ #if defined(HAS_SKIN)
+-    vec4 pre_pos = vec4(position.xyz, 1.0);
+-    mat4 mat = getObjectSkinnedTransform();
+-    mat = modelview_matrix * mat;
+-    vec4 pos = mat * pre_pos;
++    vec4 pos = skinTransformH(getSkinBlend(), position.xyz, modelview_matrix);
+     pos = projection_matrix * pos;
+ #else
+     vec4 pre_pos = vec4(position.xyz, 1.0);
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/pbralphaV.glsl b/indra/newview/app_settings/shaders/class1/deferred/pbralphaV.glsl
+index 66adf50..8c71adc 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/pbralphaV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/pbralphaV.glsl
+@@ -23,6 +23,11 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ 
+ #ifndef IS_HUD
+ 
+@@ -31,7 +36,9 @@
+ #ifdef HAS_SKIN
+ uniform mat4 modelview_matrix;
+ uniform mat4 projection_matrix;
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec3 skinNormal(mat3x4 b, vec3 pos, vec3 dir, mat4 m);
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ #else
+ uniform mat3 normal_matrix;
+ uniform mat4 modelview_projection_matrix;
+@@ -75,9 +82,8 @@ vec4 tangent_space_transform(vec4 vertex_tangent, vec3 vertex_normal, vec4[2] kh
+ void main()
+ {
+ #ifdef HAS_SKIN
+-    mat4 mat = getObjectSkinnedTransform();
+-    mat = modelview_matrix * mat;
+-    vec3 pos = (mat*vec4(position.xyz,1.0)).xyz;
++    mat3x4 skin = getSkinBlend();
++    vec3 pos = skinTransformH(skin, position.xyz, modelview_matrix).xyz;
+     vary_position = pos;
+     vec4 vert = projection_matrix * vec4(pos,1.0);
+ #else
+@@ -94,8 +100,8 @@ void main()
+     emissive_texcoord = texture_transform(texcoord0, texture_emissive_transform, texture_matrix0);
+ 
+ #ifdef HAS_SKIN
+-    vec3 n = (mat*vec4(normal.xyz+position.xyz,1.0)).xyz-pos.xyz;
+-    vec3 t = (mat*vec4(tangent.xyz+position.xyz,1.0)).xyz-pos.xyz;
++    vec3 n = skinNormal(skin, position.xyz, normal.xyz, modelview_matrix);
++    vec3 t = skinNormal(skin, position.xyz, tangent.xyz, modelview_matrix);
+ #else //HAS_SKIN
+     vec3 n = normal_matrix * normal;
+     vec3 t = normal_matrix * tangent.xyz;
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/pbrglowV.glsl b/indra/newview/app_settings/shaders/class1/deferred/pbrglowV.glsl
+index f739099..c0b16d4 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/pbrglowV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/pbrglowV.glsl
+@@ -23,11 +23,17 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ 
+ #ifdef HAS_SKIN
+ uniform mat4 modelview_matrix;
+ uniform mat4 projection_matrix;
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ #else
+ uniform mat4 modelview_projection_matrix;
+ #endif
+@@ -52,11 +58,7 @@ vec2 texture_transform(vec2 vertex_texcoord, vec4[2] khr_gltf_transform, mat4 sl
+ void main()
+ {
+ #ifdef HAS_SKIN
+-    mat4 mat = getObjectSkinnedTransform();
+-
+-    mat = modelview_matrix * mat;
+-
+-    vec3 pos = (mat*vec4(position.xyz,1.0)).xyz;
++    vec3 pos = skinTransformH(getSkinBlend(), position.xyz, modelview_matrix).xyz;
+ 
+     gl_Position = projection_matrix*vec4(pos,1.0);
+ #else
+@@ -69,4 +71,3 @@ void main()
+ 
+     vertex_emissive = emissive;
+ }
+-
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/pbropaqueV.glsl b/indra/newview/app_settings/shaders/class1/deferred/pbropaqueV.glsl
+index 0ad9bf5..e105a73 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/pbropaqueV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/pbropaqueV.glsl
+@@ -23,6 +23,11 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ 
+ #ifndef IS_HUD
+ 
+@@ -32,7 +37,9 @@ uniform mat4 modelview_matrix;
+ 
+ #ifdef HAS_SKIN
+ uniform mat4 projection_matrix;
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec3 skinNormal(mat3x4 b, vec3 pos, vec3 dir, mat4 m);
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ #else
+ uniform mat3 normal_matrix;
+ uniform mat4 modelview_projection_matrix;
+@@ -68,11 +75,8 @@ vec4 tangent_space_transform(vec4 vertex_tangent, vec3 vertex_normal, vec4[2] kh
+ void main()
+ {
+ #ifdef HAS_SKIN
+-    mat4 mat = getObjectSkinnedTransform();
+-
+-    mat = modelview_matrix * mat;
+-
+-    vec3 pos = (mat*vec4(position.xyz,1.0)).xyz;
++    mat3x4 skin = getSkinBlend();
++    vec3 pos = skinTransformH(skin, position.xyz, modelview_matrix).xyz;
+     vary_position = pos;
+     gl_Position = projection_matrix*vec4(pos,1.0);
+ 
+@@ -88,8 +92,8 @@ void main()
+     emissive_texcoord = texture_transform(texcoord0, texture_emissive_transform, texture_matrix0);
+ 
+ #ifdef HAS_SKIN
+-    vec3 n = (mat*vec4(normal.xyz+position.xyz,1.0)).xyz-pos.xyz;
+-    vec3 t = (mat*vec4(tangent.xyz+position.xyz,1.0)).xyz-pos.xyz;
++    vec3 n = skinNormal(skin, position.xyz, normal.xyz, modelview_matrix);
++    vec3 t = skinNormal(skin, position.xyz, tangent.xyz, modelview_matrix);
+ #else //HAS_SKIN
+     vec3 n = normal_matrix * normal;
+     vec3 t = normal_matrix * tangent.xyz;
+@@ -140,4 +144,3 @@ void main()
+ 
+ #endif
+ 
+-
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/pbrterrainF.glsl b/indra/newview/app_settings/shaders/class1/deferred/pbrterrainF.glsl
+index 1b90cf9..9e21a9e 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/pbrterrainF.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/pbrterrainF.glsl
+@@ -33,10 +33,24 @@
+ #define TERRAIN_PAINT_TYPE_HEIGHTMAP_WITH_NOISE 0
+ #define TERRAIN_PAINT_TYPE_PBR_PAINTMAP 1
+ 
++struct TerrainSampleCoord
++{
++    vec2 uv;
++    vec2 dx;
++    vec2 dy;
++};
++TerrainSampleCoord terrain_sample_coord(vec2 uv);
++
+ #if TERRAIN_PLANAR_TEXTURE_SAMPLE_COUNT == 3
+-#define TerrainCoord vec4[3]
++struct TerrainCoord
++{
++    TerrainSampleCoord x;
++    TerrainSampleCoord y;
++    TerrainSampleCoord z;
++};
++TerrainCoord terrain_coord(vec2 z, vec2 x, vec2 y, vec2 flipped_x, vec2 flipped_y);
+ #elif TERRAIN_PLANAR_TEXTURE_SAMPLE_COUNT == 1
+-#define TerrainCoord vec2
++#define TerrainCoord TerrainSampleCoord
+ #endif
+ 
+ #define MIX_X    1 << 3
+@@ -183,8 +197,19 @@ vec3 mikktspace(vec3 vNt, vec3 vT, float sign)
+ 
+ void main()
+ {
+-    // Make sure we clip the terrain if we're in a mirror.
+-    mirrorClip(vary_position);
++    // Compute every swatch's gradients before divergent material/axis selection.
++    TerrainCoord coords[4];
++#if TERRAIN_PLANAR_TEXTURE_SAMPLE_COUNT == 3
++    coords[0] = terrain_coord(vary_coords[0].xy, vary_coords[0].zw, vary_coords[1].xy, vary_coords[1].zw, vary_coords[2].xy);
++    coords[1] = terrain_coord(vary_coords[2].zw, vary_coords[3].xy, vary_coords[3].zw, vary_coords[4].xy, vary_coords[4].zw);
++    coords[2] = terrain_coord(vary_coords[5].xy, vary_coords[5].zw, vary_coords[6].xy, vary_coords[6].zw, vary_coords[7].xy);
++    coords[3] = terrain_coord(vary_coords[7].zw, vary_coords[8].xy, vary_coords[8].zw, vary_coords[9].xy, vary_coords[9].zw);
++#else
++    coords[0] = terrain_sample_coord(vary_coords[0].xy);
++    coords[1] = terrain_sample_coord(vary_coords[0].zw);
++    coords[2] = terrain_sample_coord(vary_coords[1].xy);
++    coords[3] = terrain_sample_coord(vary_coords[1].zw);
++#endif
+ 
+     TerrainMix tm;
+ #if TERRAIN_PAINT_TYPE == TERRAIN_PAINT_TYPE_HEIGHTMAP_WITH_NOISE
+@@ -197,6 +222,8 @@ void main()
+     tm = get_terrain_usage_from_weight3(texture(paint_map, vary_texcoord).xyz);
+ #endif
+ 
++    mirrorClip(vary_position);
++
+ #if (TERRAIN_PBR_DETAIL >= TERRAIN_PBR_DETAIL_OCCLUSION)
+     // RGB = Occlusion, Roughness, Metal
+     // default values, see LLViewerTexture::sDefaultPBRORMImagep
+@@ -218,21 +245,11 @@ void main()
+ 
+     PBRMix pbr_mix = init_pbr_mix();
+     PBRMix mix2;
+-    TerrainCoord terrain_texcoord;
+     switch (tm.type & MIX_X)
+     {
+     case MIX_X:
+-#if TERRAIN_PLANAR_TEXTURE_SAMPLE_COUNT == 3
+-        terrain_texcoord[0].xy = vary_coords[0].xy;
+-        terrain_texcoord[0].zw = vary_coords[0].zw;
+-        terrain_texcoord[1].xy = vary_coords[1].xy;
+-        terrain_texcoord[1].zw = vary_coords[1].zw;
+-        terrain_texcoord[2].xy = vary_coords[2].xy;
+-#elif TERRAIN_PLANAR_TEXTURE_SAMPLE_COUNT == 1
+-        terrain_texcoord = vary_coords[0].xy;
+-#endif
+         mix2 = terrain_sample_and_multiply_pbr(
+-            terrain_texcoord
++            coords[0]
+             , detail_0_base_color
+ #if (TERRAIN_PBR_DETAIL >= TERRAIN_PBR_DETAIL_METALLIC_ROUGHNESS)
+             , detail_0_metallic_roughness
+@@ -267,17 +284,8 @@ void main()
+     switch (tm.type & MIX_Y)
+     {
+     case MIX_Y:
+-#if TERRAIN_PLANAR_TEXTURE_SAMPLE_COUNT == 3
+-        terrain_texcoord[0].xy = vary_coords[2].zw;
+-        terrain_texcoord[0].zw = vary_coords[3].xy;
+-        terrain_texcoord[1].xy = vary_coords[3].zw;
+-        terrain_texcoord[1].zw = vary_coords[4].xy;
+-        terrain_texcoord[2].xy = vary_coords[4].zw;
+-#elif TERRAIN_PLANAR_TEXTURE_SAMPLE_COUNT == 1
+-        terrain_texcoord = vary_coords[0].zw;
+-#endif
+         mix2 = terrain_sample_and_multiply_pbr(
+-            terrain_texcoord
++            coords[1]
+             , detail_1_base_color
+ #if (TERRAIN_PBR_DETAIL >= TERRAIN_PBR_DETAIL_METALLIC_ROUGHNESS)
+             , detail_1_metallic_roughness
+@@ -312,17 +320,8 @@ void main()
+     switch (tm.type & MIX_Z)
+     {
+     case MIX_Z:
+-#if TERRAIN_PLANAR_TEXTURE_SAMPLE_COUNT == 3
+-        terrain_texcoord[0].xy = vary_coords[5].xy;
+-        terrain_texcoord[0].zw = vary_coords[5].zw;
+-        terrain_texcoord[1].xy = vary_coords[6].xy;
+-        terrain_texcoord[1].zw = vary_coords[6].zw;
+-        terrain_texcoord[2].xy = vary_coords[7].xy;
+-#elif TERRAIN_PLANAR_TEXTURE_SAMPLE_COUNT == 1
+-        terrain_texcoord = vary_coords[1].xy;
+-#endif
+         mix2 = terrain_sample_and_multiply_pbr(
+-            terrain_texcoord
++            coords[2]
+             , detail_2_base_color
+ #if (TERRAIN_PBR_DETAIL >= TERRAIN_PBR_DETAIL_METALLIC_ROUGHNESS)
+             , detail_2_metallic_roughness
+@@ -357,17 +356,8 @@ void main()
+     switch (tm.type & MIX_W)
+     {
+     case MIX_W:
+-#if TERRAIN_PLANAR_TEXTURE_SAMPLE_COUNT == 3
+-        terrain_texcoord[0].xy = vary_coords[7].zw;
+-        terrain_texcoord[0].zw = vary_coords[8].xy;
+-        terrain_texcoord[1].xy = vary_coords[8].zw;
+-        terrain_texcoord[1].zw = vary_coords[9].xy;
+-        terrain_texcoord[2].xy = vary_coords[9].zw;
+-#elif TERRAIN_PLANAR_TEXTURE_SAMPLE_COUNT == 1
+-        terrain_texcoord = vary_coords[1].zw;
+-#endif
+         mix2 = terrain_sample_and_multiply_pbr(
+-            terrain_texcoord
++            coords[3]
+             , detail_3_base_color
+ #if (TERRAIN_PBR_DETAIL >= TERRAIN_PBR_DETAIL_METALLIC_ROUGHNESS)
+             , detail_3_metallic_roughness
+@@ -410,7 +400,7 @@ void main()
+ #if (TERRAIN_PBR_DETAIL >= TERRAIN_PBR_DETAIL_NORMAL)
+     vec3 tnorm = normalize(pbr_mix.vNt);
+ #else
+-    vec3 tnorm = vary_normal;
++    vec3 tnorm = normalize(vary_normal);
+ #endif
+     tnorm *= gl_FrontFacing ? 1.0 : -1.0;
+ 
+@@ -436,4 +426,3 @@ void main()
+     frag_data[3] = max(vec4(mix_emissive,0), vec4(0));                                                // PBR sRGB Emissive
+ #endif
+ }
+-
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/pbrterrainUtilF.glsl b/indra/newview/app_settings/shaders/class1/deferred/pbrterrainUtilF.glsl
+index dc43007..4b603b6 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/pbrterrainUtilF.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/pbrterrainUtilF.glsl
+@@ -139,8 +139,21 @@ PBRMix mix_pbr(PBRMix mix1, PBRMix mix2, float mix2_weight)
+     return mix;
+ }
+ 
++struct TerrainSampleCoord
++{
++    vec2 uv;
++    vec2 dx;
++    vec2 dy;
++};
++
++TerrainSampleCoord terrain_sample_coord(vec2 uv)
++{
++    // Call before material/axis selection and before clipping fragments.
++    return TerrainSampleCoord(uv, dFdx(uv), dFdy(uv));
++}
++
+ PBRMix sample_pbr(
+-    vec2 uv
++    TerrainSampleCoord coord
+     , sampler2D tex_col
+ #if (TERRAIN_PBR_DETAIL >= TERRAIN_PBR_DETAIL_METALLIC_ROUGHNESS)
+     , sampler2D tex_orm
+@@ -154,18 +167,18 @@ PBRMix sample_pbr(
+     )
+ {
+     PBRMix mix;
+-    mix.col = texture(tex_col, uv);
++    mix.col = textureGrad(tex_col, coord.uv, coord.dx, coord.dy);
+     mix.col.rgb = srgb_to_linear(mix.col.rgb);
+ #if (TERRAIN_PBR_DETAIL >= TERRAIN_PBR_DETAIL_OCCLUSION)
+-    mix.orm = texture(tex_orm, uv).xyz;
++    mix.orm = textureGrad(tex_orm, coord.uv, coord.dx, coord.dy).xyz;
+ #elif (TERRAIN_PBR_DETAIL >= TERRAIN_PBR_DETAIL_METALLIC_ROUGHNESS)
+-    mix.rm = texture(tex_orm, uv).yz;
++    mix.rm = textureGrad(tex_orm, coord.uv, coord.dx, coord.dy).yz;
+ #endif
+ #if (TERRAIN_PBR_DETAIL >= TERRAIN_PBR_DETAIL_NORMAL)
+-    mix.vNt = texture(tex_vNt, uv).xyz*2.0-1.0;
++    mix.vNt = textureGrad(tex_vNt, coord.uv, coord.dx, coord.dy).xyz*2.0-1.0;
+ #endif
+ #if (TERRAIN_PBR_DETAIL >= TERRAIN_PBR_DETAIL_EMISSIVE)
+-    mix.emissive = srgb_to_linear(texture(tex_emissive, uv).xyz);
++    mix.emissive = srgb_to_linear(textureGrad(tex_emissive, coord.uv, coord.dx, coord.dy).xyz);
+ #endif
+     return mix;
+ }
+@@ -279,7 +292,12 @@ float terrain_mix(TerrainMix tm, vec4 tms4)
+ // Triplanar mapping
+ 
+ // Pre-transformed texture coordinates for each axial uv slice (Packing: xy, yz, (-x)z, unused)
+-#define TerrainCoord vec4[3]
++struct TerrainCoord
++{
++    TerrainSampleCoord x;
++    TerrainSampleCoord y;
++    TerrainSampleCoord z;
++};
+ 
+ // If sign_or_zero is positive, use uv_unflippped, otherwise use uv_flipped
+ vec2 _t_uv(vec2 uv_unflipped, vec2 uv_flipped, float sign_or_zero)
+@@ -287,6 +305,14 @@ vec2 _t_uv(vec2 uv_unflipped, vec2 uv_flipped, float sign_or_zero)
+     return mix(uv_flipped, uv_unflipped, max(0.0, sign_or_zero));
+ }
+ 
++TerrainCoord terrain_coord(vec2 z, vec2 x, vec2 y, vec2 flipped_x, vec2 flipped_y)
++{
++    return TerrainCoord(
++        terrain_sample_coord(_t_uv(x, flipped_x, sign(vary_vertex_normal.x))),
++        terrain_sample_coord(_t_uv(y, flipped_y, sign(vary_vertex_normal.y))),
++        terrain_sample_coord(_t_uv(z, vec2(0), sign(vary_vertex_normal.z))));
++}
++
+ vec3 _t_normal_post_1(vec3 vNt0, float sign_or_zero)
+ {
+     // Assume normal is unpacked
+@@ -341,14 +367,11 @@ PBRMix terrain_sample_pbr(
+ {
+     PBRMix mix = init_pbr_mix();
+ 
+-#define get_uv_x() _t_uv(terrain_coord[0].zw, terrain_coord[1].zw, sign(vary_vertex_normal.x))
+-#define get_uv_y() _t_uv(terrain_coord[1].xy, terrain_coord[2].xy, sign(vary_vertex_normal.y))
+-#define get_uv_z() _t_uv(terrain_coord[0].xy, vec2(0),             sign(vary_vertex_normal.z))
+     switch (tw.type & SAMPLE_X)
+     {
+     case SAMPLE_X:
+         PBRMix mix_x = sample_pbr(
+-            get_uv_x()
++            terrain_coord.x
+             , tex_col
+ #if (TERRAIN_PBR_DETAIL >= TERRAIN_PBR_DETAIL_METALLIC_ROUGHNESS)
+             , tex_orm
+@@ -374,7 +397,7 @@ PBRMix terrain_sample_pbr(
+     {
+     case SAMPLE_Y:
+         PBRMix mix_y = sample_pbr(
+-            get_uv_y()
++            terrain_coord.y
+             , tex_col
+ #if (TERRAIN_PBR_DETAIL >= TERRAIN_PBR_DETAIL_METALLIC_ROUGHNESS)
+             , tex_orm
+@@ -400,7 +423,7 @@ PBRMix terrain_sample_pbr(
+     {
+     case SAMPLE_Z:
+         PBRMix mix_z = sample_pbr(
+-            get_uv_z()
++            terrain_coord.z
+             , tex_col
+ #if (TERRAIN_PBR_DETAIL >= TERRAIN_PBR_DETAIL_METALLIC_ROUGHNESS)
+             , tex_orm
+@@ -428,7 +451,7 @@ PBRMix terrain_sample_pbr(
+ 
+ #elif TERRAIN_PLANAR_TEXTURE_SAMPLE_COUNT == 1
+ 
+-#define TerrainCoord vec2
++#define TerrainCoord TerrainSampleCoord
+ 
+ #define terrain_sample_pbr sample_pbr
+ 
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/shadowAlphaMaskV.glsl b/indra/newview/app_settings/shaders/class1/deferred/shadowAlphaMaskV.glsl
+index 665ff6d..38ddf09 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/shadowAlphaMaskV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/shadowAlphaMaskV.glsl
+@@ -23,11 +23,17 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ uniform mat4 texture_matrix0;
+ #if defined(HAS_SKIN)
+ uniform mat4 modelview_matrix;
+ uniform mat4 projection_matrix;
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ #else
+ uniform mat4 modelview_projection_matrix;
+ #endif
+@@ -49,10 +55,7 @@ void main()
+ {
+     //transform vertex
+ #if defined(HAS_SKIN)
+-    vec4 pre_pos = vec4(position.xyz, 1.0);
+-    mat4 mat = getObjectSkinnedTransform();
+-    mat = modelview_matrix * mat;
+-    vec4 pos = mat * pre_pos;
++    vec4 pos = skinTransformH(getSkinBlend(), position.xyz, modelview_matrix);
+     pos = projection_matrix * pos;
+ #else
+     vec4 pre_pos = vec4(position.xyz, 1.0);
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/shadowSkinnedV.glsl b/indra/newview/app_settings/shaders/class1/deferred/shadowSkinnedV.glsl
+index 1485ea9..917894d 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/shadowSkinnedV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/shadowSkinnedV.glsl
+@@ -23,20 +23,23 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ uniform mat4 modelview_matrix;
+ uniform mat4 projection_matrix;
+ 
+ in vec3 position;
+ 
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ 
+ void main()
+ {
+     //transform vertex
+-    mat4 mat = getObjectSkinnedTransform();
+-
+-    mat = modelview_matrix * mat;
+-    vec4 pos = (mat*vec4(position.xyz, 1.0));
++    vec4 pos = skinTransformH(getSkinBlend(), position.xyz, modelview_matrix);
+     pos = projection_matrix*pos;
+ 
+     gl_Position = pos;
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/skinnedVelocityAlphaV.glsl b/indra/newview/app_settings/shaders/class1/deferred/skinnedVelocityAlphaV.glsl
+index fc6f640..527970c 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/skinnedVelocityAlphaV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/skinnedVelocityAlphaV.glsl
+@@ -37,6 +37,8 @@ out vec2 vary_texcoord0;
+ out vec4 vertex_color;
+ 
+ uniform mat3x4 lastMatrixPalette[MAX_JOINTS_PER_MESH_OBJECT];
++uniform vec3 last_skin_origin;
++uniform int matrixPaletteSize;
+ 
+ mat4 getObjectSkinnedTransform();
+ 
+@@ -47,10 +49,17 @@ mat4 getLastObjectSkinnedTransform()
+     vec4 w = fract(weight4);
+     vec4 index = floor(weight4);
+ 
+-    index = min(index, vec4(MAX_JOINTS_PER_MESH_OBJECT-1));
++    index = min(index, vec4(float(min(max(matrixPaletteSize - 1, 0), MAX_JOINTS_PER_MESH_OBJECT - 1))));
+     index = max(index, vec4(0.0));
+ 
+-    w *= 1.0/(w.x+w.y+w.z+w.w);
++    float weight_sum = w.x + w.y + w.z + w.w;
++    if (weight_sum <= 0.00001)
++    {
++        w = vec4(1.0, 0.0, 0.0, 0.0);
++        index = vec4(0.0);
++        weight_sum = 1.0;
++    }
++    w *= 1.0 / weight_sum;
+ 
+     int i1 = int(index.x);
+     int i2 = int(index.y);
+@@ -71,7 +80,7 @@ mat4 getLastObjectSkinnedTransform()
+     ret[0] = vec4(mat[0], 0);
+     ret[1] = vec4(mat[1], 0);
+     ret[2] = vec4(mat[2], 0);
+-    ret[3] = vec4(trans, 1.0);
++    ret[3] = vec4(trans + last_skin_origin, 1.0);
+ 
+     return ret;
+ }
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/skinnedVelocityV.glsl b/indra/newview/app_settings/shaders/class1/deferred/skinnedVelocityV.glsl
+index 038f32e..c908edf 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/skinnedVelocityV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/skinnedVelocityV.glsl
+@@ -31,6 +31,8 @@ in vec3 position;
+ in vec4 weight4;
+ 
+ uniform mat3x4 lastMatrixPalette[MAX_JOINTS_PER_MESH_OBJECT];
++uniform vec3 last_skin_origin;
++uniform int matrixPaletteSize;
+ 
+ mat4 getObjectSkinnedTransform();
+ 
+@@ -41,10 +43,17 @@ mat4 getLastObjectSkinnedTransform()
+     vec4 w = fract(weight4);
+     vec4 index = floor(weight4);
+ 
+-    index = min(index, vec4(MAX_JOINTS_PER_MESH_OBJECT-1));
++    index = min(index, vec4(float(min(max(matrixPaletteSize - 1, 0), MAX_JOINTS_PER_MESH_OBJECT - 1))));
+     index = max(index, vec4(0.0));
+ 
+-    w *= 1.0/(w.x+w.y+w.z+w.w);
++    float weight_sum = w.x + w.y + w.z + w.w;
++    if (weight_sum <= 0.00001)
++    {
++        w = vec4(1.0, 0.0, 0.0, 0.0);
++        index = vec4(0.0);
++        weight_sum = 1.0;
++    }
++    w *= 1.0 / weight_sum;
+ 
+     int i1 = int(index.x);
+     int i2 = int(index.y);
+@@ -65,7 +74,7 @@ mat4 getLastObjectSkinnedTransform()
+     ret[0] = vec4(mat[0], 0);
+     ret[1] = vec4(mat[1], 0);
+     ret[2] = vec4(mat[2], 0);
+-    ret[3] = vec4(trans, 1.0);
++    ret[3] = vec4(trans + last_skin_origin, 1.0);
+ 
+     return ret;
+ }
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/treeShadowSkinnedV.glsl b/indra/newview/app_settings/shaders/class1/deferred/treeShadowSkinnedV.glsl
+index f2c8007..1d15328 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/treeShadowSkinnedV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/treeShadowSkinnedV.glsl
+@@ -23,6 +23,11 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ uniform mat4 texture_matrix0;
+ uniform mat4 modelview_matrix;
+ uniform mat4 projection_matrix;
+@@ -32,16 +37,13 @@ in vec2 texcoord0;
+ 
+ out vec2 vary_texcoord0;
+ 
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ 
+ void main()
+ {
+     //transform vertex
+-    mat4 mat = getObjectSkinnedTransform();
+-
+-    mat = modelview_matrix * mat;
+-
+-    vec4 pos = mat * vec4(position.xyz, 1.0);
++    vec4 pos = skinTransformH(getSkinBlend(), position.xyz, modelview_matrix);
+     gl_Position = projection_matrix * pos;
+ 
+     vary_texcoord0 = (texture_matrix0 * vec4(texcoord0,0,1)).xy;
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/velocityAlphaV.glsl b/indra/newview/app_settings/shaders/class1/deferred/velocityAlphaV.glsl
+index 805ead5..5f5c15f 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/velocityAlphaV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/velocityAlphaV.glsl
+@@ -23,6 +23,11 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ uniform mat4 modelview_projection_matrix;
+ uniform mat4 modelview_matrix;
+ uniform mat4 projection_matrix;
+@@ -41,8 +46,10 @@ void passTextureIndex();
+ void writeVaryVelocity(vec4 pos, vec4 last_pos);
+ 
+ #ifdef HAS_SKIN
+-mat4 getObjectSkinnedTransform();
+-mat4 getLastObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++mat3x4 getLastSkinBlend();
++vec4 skinTransformH(mat3x4 skin, vec3 position, mat4 transform);
++vec4 lastSkinTransformH(mat3x4 skin, vec3 position, mat4 transform);
+ #endif
+ 
+ void main()
+@@ -53,12 +60,10 @@ void main()
+     passTextureIndex();
+ 
+ #ifdef HAS_SKIN
+-    mat4 cur_mat = getObjectSkinnedTransform();
+-    vec4 pos = projection_matrix * modelview_matrix * cur_mat * vec4(position.xyz, 1.0);
++    vec4 pos = projection_matrix * skinTransformH(getSkinBlend(), position, modelview_matrix);
+     gl_Position = pos;
+ 
+-    mat4 last_mat = getLastObjectSkinnedTransform();
+-    vec4 last_pos = projection_matrix * last_modelview_matrix * last_mat * vec4(position.xyz, 1.0);
++    vec4 last_pos = projection_matrix * lastSkinTransformH(getLastSkinBlend(), position, last_modelview_matrix);
+ #else
+     vec4 pos = modelview_projection_matrix * vec4(position.xyz, 1.0);
+     gl_Position = pos;
+diff --git a/indra/newview/app_settings/shaders/class1/deferred/velocityV.glsl b/indra/newview/app_settings/shaders/class1/deferred/velocityV.glsl
+index 09b6a46..5497c77 100644
+--- a/indra/newview/app_settings/shaders/class1/deferred/velocityV.glsl
++++ b/indra/newview/app_settings/shaders/class1/deferred/velocityV.glsl
+@@ -23,6 +23,11 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ uniform mat4 modelview_projection_matrix;
+ uniform mat4 modelview_matrix;
+ uniform mat4 projection_matrix;
+@@ -34,19 +39,19 @@ in vec3 position;
+ void writeVaryVelocity(vec4 pos, vec4 last_pos);
+ 
+ #ifdef HAS_SKIN
+-mat4 getObjectSkinnedTransform();
+-mat4 getLastObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++mat3x4 getLastSkinBlend();
++vec4 skinTransformH(mat3x4 skin, vec3 position, mat4 transform);
++vec4 lastSkinTransformH(mat3x4 skin, vec3 position, mat4 transform);
+ #endif
+ 
+ void main()
+ {
+ #ifdef HAS_SKIN
+-    mat4 cur_mat = getObjectSkinnedTransform();
+-    vec4 pos = projection_matrix * modelview_matrix * cur_mat * vec4(position.xyz, 1.0);
++    vec4 pos = projection_matrix * skinTransformH(getSkinBlend(), position, modelview_matrix);
+     gl_Position = pos;
+ 
+-    mat4 last_mat = getLastObjectSkinnedTransform();
+-    vec4 last_pos = projection_matrix * last_modelview_matrix * last_mat * vec4(position.xyz, 1.0);
++    vec4 last_pos = projection_matrix * lastSkinTransformH(getLastSkinBlend(), position, last_modelview_matrix);
+ #else
+     vec4 pos = modelview_projection_matrix * vec4(position.xyz, 1.0);
+     gl_Position = pos;
+diff --git a/indra/newview/app_settings/shaders/class1/gltf/pbrmetallicroughnessF.glsl b/indra/newview/app_settings/shaders/class1/gltf/pbrmetallicroughnessF.glsl
+index daab7c1..7cd6061 100644
+--- a/indra/newview/app_settings/shaders/class1/gltf/pbrmetallicroughnessF.glsl
++++ b/indra/newview/app_settings/shaders/class1/gltf/pbrmetallicroughnessF.glsl
+@@ -49,7 +49,7 @@ void unpackMaterial()
+         emissiveColor = gltf_material_data[idx+10].rgb;
+         roughnessFactor = gltf_material_data[idx+11].g;
+         metallicFactor = gltf_material_data[idx+11].b;
+-        minimum_alpha -= gltf_material_data[idx+11].a;
++        minimum_alpha = gltf_material_data[idx+11].a;
+     }
+ }
+ 
+@@ -109,8 +109,8 @@ vec4 applySkyAndWaterFog(vec3 pos, vec3 additive, vec3 atten, vec4 color);
+ 
+ #ifdef HAS_SUN_SHADOW
+ uniform sampler2D lightMap;
+-uniform vec2 screen_res;
+ #endif
++uniform vec2 screen_res;
+ 
+ // Lights
+ // See: LLRender::syncLightState()
+@@ -283,14 +283,14 @@ void main()
+     scol = sampleDirectionalShadow(pos.xyz, norm.xyz, frag);
+ #endif
+ 
+-    float perceptualRoughness = orm.g * roughnessFactor;
+-    float metallic = orm.b * metallicFactor;
++    float perceptualRoughness = orm.g;
++    float metallic = orm.b;
+ 
+     // PBR IBL
+     float gloss      = 1.0 - perceptualRoughness;
+     vec3  irradiance = vec3(0);
+     vec3  radiance  = vec3(0);
+-    sampleReflectionProbes(irradiance, radiance, vary_position.xy*0.5+0.5, pos.xyz, norm.xyz, gloss, true, amblit);
++    sampleReflectionProbes(irradiance, radiance, gl_FragCoord.xy / screen_res, pos.xyz, norm.xyz, gloss, true, amblit);
+ 
+     vec3 diffuseColor;
+     vec3 specularColor;
+@@ -317,7 +317,7 @@ void main()
+ 
+     color.rgb = applySkyAndWaterFog(pos.xyz, additive, atten, vec4(color, 1.0)).rgb;
+ 
+-    float a = basecolor.a*vertex_color.a;
++    float a = basecolor.a;
+ 
+     frag_color = max(vec4(color.rgb,a), vec4(0));
+ #else // UNLIT
+@@ -327,4 +327,3 @@ void main()
+ #endif
+ #endif  // ALPHA_BLEND
+ }
+-
+diff --git a/indra/newview/app_settings/shaders/class1/gltf/pbrmetallicroughnessV.glsl b/indra/newview/app_settings/shaders/class1/gltf/pbrmetallicroughnessV.glsl
+index f55b83d..956d12c 100644
+--- a/indra/newview/app_settings/shaders/class1/gltf/pbrmetallicroughnessV.glsl
++++ b/indra/newview/app_settings/shaders/class1/gltf/pbrmetallicroughnessV.glsl
+@@ -309,8 +309,8 @@ void main()
+ #endif
+ 
+ #ifndef UNLIT
+-    vec3 n = (mat*vec4(normal.xyz+position.xyz,1.0)).xyz-pos.xyz;
+-    vec3 t = (mat*vec4(tangent.xyz+position.xyz,1.0)).xyz-pos.xyz;
++    vec3 n = mat3(mat) * normal.xyz;
++    vec3 t = mat3(mat) * tangent.xyz;
+ 
+     n = normalize(n);
+     vary_tangent = normalize(gltf_tangent_space_transform(vec4(t, tangent.w), n, texture_normal_transform));
+@@ -326,4 +326,3 @@ void main()
+ 
+ 
+ 
+-
+diff --git a/indra/newview/app_settings/shaders/class1/interface/debugV.glsl b/indra/newview/app_settings/shaders/class1/interface/debugV.glsl
+index 82d1b6c..b2a32f0 100644
+--- a/indra/newview/app_settings/shaders/class1/interface/debugV.glsl
++++ b/indra/newview/app_settings/shaders/class1/interface/debugV.glsl
+@@ -23,12 +23,18 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ uniform mat4 modelview_projection_matrix;
+ 
+ in vec3 position;
+ 
+ #ifdef HAS_SKIN
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ uniform mat4 projection_matrix;
+ uniform mat4 modelview_matrix;
+ #endif
+@@ -36,12 +42,9 @@ uniform mat4 modelview_matrix;
+ void main()
+ {
+ #ifdef HAS_SKIN
+-    mat4 mat = getObjectSkinnedTransform();
+-    mat = modelview_matrix * mat;
+-    vec4 pos = mat * vec4(position.xyz,1.0);
++    vec4 pos = skinTransformH(getSkinBlend(), position.xyz, modelview_matrix);
+     gl_Position = projection_matrix * pos;
+ #else
+     gl_Position = modelview_projection_matrix * vec4(position.xyz, 1.0);
+ #endif
+ }
+-
+diff --git a/indra/newview/app_settings/shaders/class1/interface/highlightV.glsl b/indra/newview/app_settings/shaders/class1/interface/highlightV.glsl
+index f97b2c4..221013d 100644
+--- a/indra/newview/app_settings/shaders/class1/interface/highlightV.glsl
++++ b/indra/newview/app_settings/shaders/class1/interface/highlightV.glsl
+@@ -23,6 +23,11 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ uniform mat4 texture_matrix0;
+ uniform mat4 modelview_projection_matrix;
+ 
+@@ -32,7 +37,8 @@ in vec2 texcoord0;
+ out vec2 vary_texcoord0;
+ 
+ #ifdef HAS_SKIN
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ uniform mat4 projection_matrix;
+ uniform mat4 modelview_matrix;
+ #endif
+@@ -41,13 +47,10 @@ void main()
+ {
+     //transform vertex
+ #ifdef HAS_SKIN
+-    mat4 mat = getObjectSkinnedTransform();
+-    mat = modelview_matrix * mat;
+-    vec4 pos = mat * vec4(position.xyz,1.0);
++    vec4 pos = skinTransformH(getSkinBlend(), position.xyz, modelview_matrix);
+     gl_Position = projection_matrix * pos;
+ #else
+     gl_Position = modelview_projection_matrix * vec4(position.xyz, 1.0);
+ #endif
+     vary_texcoord0 = (texture_matrix0 * vec4(texcoord0,0,1)).xy;
+ }
+-
+diff --git a/indra/newview/app_settings/shaders/class1/interface/normaldebugV.glsl b/indra/newview/app_settings/shaders/class1/interface/normaldebugV.glsl
+index ae72619..411586c 100644
+--- a/indra/newview/app_settings/shaders/class1/interface/normaldebugV.glsl
++++ b/indra/newview/app_settings/shaders/class1/interface/normaldebugV.glsl
+@@ -23,6 +23,11 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ in vec3 position;
+ in vec3 normal;
+ out vec4 normal_g;
+@@ -34,41 +39,44 @@ out vec4 tangent_g;
+ uniform float debug_normal_draw_length;
+ 
+ #ifdef HAS_SKIN
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec3 skinNormal(mat3x4 b, vec3 pos, vec3 dir, mat4 m);
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ #else
+ uniform mat3 normal_matrix;
+ #endif
+ uniform mat4 projection_matrix;
+ uniform mat4 modelview_matrix;
+ 
+-// *NOTE: Should use the modelview_projection_matrix here in the non-skinned
+-// case for efficiency, but opting for the simplier implementation for now as
+-// this is debug code. Also, the skinned version hasn't beeen tested yet.
+-// world_pos = mat * vec4(position.xyz, 1.0)
+-vec4 get_screen_normal(vec3 position, vec4 world_pos, vec3 normal, mat4 mat)
++// The direction is already in view space.  Avoid reconstructing it by
++// subtracting two large transformed points, which loses precision at altitude.
++vec4 get_screen_normal(vec4 view_pos, vec3 view_dir)
+ {
+-    vec4 world_norm = mat * vec4((position + normal), 1.0);
+-    world_norm.xyz -= world_pos.xyz;
+-    world_norm.xyz = debug_normal_draw_length * normalize(world_norm.xyz);
+-    world_norm.xyz += world_pos.xyz;
++    vec4 world_norm = view_pos;
++    world_norm.xyz += debug_normal_draw_length * normalize(view_dir);
+     return projection_matrix * world_norm;
+ }
+ 
+ void main()
+ {
+ #ifdef HAS_SKIN
+-    mat4 mat = getObjectSkinnedTransform();
+-    mat = modelview_matrix * mat;
++    mat3x4 skin = getSkinBlend();
++    vec4 world_pos = skinTransformH(skin, position.xyz, modelview_matrix);
++    vec3 view_normal = skinNormal(skin, position.xyz, normal.xyz, modelview_matrix);
++#ifdef HAS_ATTRIBUTE_TANGENT
++    vec3 view_tangent = skinNormal(skin, position.xyz, tangent.xyz, modelview_matrix);
++#endif
+ #else
+-#define mat modelview_matrix
++    vec4 world_pos = modelview_matrix * vec4(position.xyz, 1.0);
++    vec3 view_normal = mat3(modelview_matrix) * normal.xyz;
++#ifdef HAS_ATTRIBUTE_TANGENT
++    vec3 view_tangent = mat3(modelview_matrix) * tangent.xyz;
++#endif
+ #endif
+-
+-    vec4 world_pos = mat * vec4(position.xyz,1.0);
+ 
+     gl_Position = projection_matrix * world_pos;
+-    normal_g = get_screen_normal(position.xyz, world_pos, normal.xyz, mat);
++    normal_g = get_screen_normal(world_pos, view_normal);
+ #ifdef HAS_ATTRIBUTE_TANGENT
+-    tangent_g = get_screen_normal(position.xyz, world_pos, tangent.xyz, mat);
++    tangent_g = get_screen_normal(world_pos, view_tangent);
+ #endif
+ }
+-
+diff --git a/indra/newview/app_settings/shaders/class1/interface/occlusionSkinnedV.glsl b/indra/newview/app_settings/shaders/class1/interface/occlusionSkinnedV.glsl
+index 583e4d3..aa70083 100644
+--- a/indra/newview/app_settings/shaders/class1/interface/occlusionSkinnedV.glsl
++++ b/indra/newview/app_settings/shaders/class1/interface/occlusionSkinnedV.glsl
+@@ -23,18 +23,21 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ uniform mat4 projection_matrix;
+ uniform mat4 modelview_matrix;
+ 
+ in vec3 position;
+ 
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ 
+ void main()
+ {
+-    mat4 mat = getObjectSkinnedTransform();
+-    mat = modelview_matrix * mat;
+-    vec3 pos = (mat*vec4(position.xyz, 1.0)).xyz;
++    vec3 pos = skinTransformH(getSkinBlend(), position.xyz, modelview_matrix).xyz;
+     gl_Position = projection_matrix*vec4(pos, 1.0);
+ }
+-
+diff --git a/indra/newview/app_settings/shaders/class1/objects/bumpV.glsl b/indra/newview/app_settings/shaders/class1/objects/bumpV.glsl
+index 95cdfb6..007b684 100644
+--- a/indra/newview/app_settings/shaders/class1/objects/bumpV.glsl
++++ b/indra/newview/app_settings/shaders/class1/objects/bumpV.glsl
+@@ -23,6 +23,11 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ uniform mat4 modelview_matrix;
+ uniform mat4 texture_matrix0;
+ uniform mat4 modelview_projection_matrix;
+@@ -36,7 +41,8 @@ out vec2 vary_texcoord1;
+ out vec3 vary_position;
+ 
+ #ifdef HAS_SKIN
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ uniform mat4 projection_matrix;
+ #endif
+ 
+@@ -44,9 +50,7 @@ void main()
+ {
+     //transform vertex
+ #ifdef HAS_SKIN
+-    mat4 mat = getObjectSkinnedTransform();
+-    mat = modelview_matrix * mat;
+-    vec4 pos = mat * vec4(position.xyz, 1.0);
++    vec4 pos = skinTransformH(getSkinBlend(), position.xyz, modelview_matrix);
+     vary_position = pos.xyz;
+     gl_Position = projection_matrix * pos;
+ #else
+diff --git a/indra/newview/app_settings/shaders/class1/objects/previewV.glsl b/indra/newview/app_settings/shaders/class1/objects/previewV.glsl
+index f415253..ffd9fa5 100644
+--- a/indra/newview/app_settings/shaders/class1/objects/previewV.glsl
++++ b/indra/newview/app_settings/shaders/class1/objects/previewV.glsl
+@@ -23,6 +23,11 @@
+  * $/LicenseInfo$
+  */
+ 
++#ifdef RIGGED_PRECISE_MATH
++invariant gl_Position;
++precise gl_Position;
++#endif
++
+ uniform mat3 normal_matrix;
+ uniform mat4 texture_matrix0;
+ uniform mat4 modelview_projection_matrix;
+@@ -54,7 +59,9 @@ float calcDirectionalLight(vec3 n, vec3 l)
+ 
+ 
+ #ifdef HAS_SKIN
+-mat4 getObjectSkinnedTransform();
++mat3x4 getSkinBlend();
++vec3 skinNormal(mat3x4 b, vec3 pos, vec3 dir, mat4 m);
++vec4 skinTransformH(mat3x4 b, vec3 pos, mat4 m);
+ uniform mat4 modelview_matrix;
+ uniform mat4 projection_matrix;
+ #endif
+@@ -63,11 +70,10 @@ void main()
+ {
+     vec3 norm;
+ #ifdef HAS_SKIN
+-    mat4 mat = getObjectSkinnedTransform();
+-    mat = modelview_matrix * mat;
+-    vec4 pos = mat * vec4(position.xyz, 1.0);
++    mat3x4 skin = getSkinBlend();
++    vec4 pos = skinTransformH(skin, position.xyz, modelview_matrix);
+     gl_Position = projection_matrix * pos;
+-    norm = normalize((mat*vec4(normal.xyz+position.xyz,1.0)).xyz-pos.xyz);
++    norm = normalize(skinNormal(skin, position.xyz, normal.xyz, modelview_matrix));
+ #else
+     gl_Position = modelview_projection_matrix * vec4(position.xyz, 1.0);
+     norm = normalize(normal_matrix * normal);
+diff --git a/indra/newview/app_settings/shaders/class2/deferred/pbralphaF.glsl b/indra/newview/app_settings/shaders/class2/deferred/pbralphaF.glsl
+index 0418f99..b02ceaa 100644
+--- a/indra/newview/app_settings/shaders/class2/deferred/pbralphaF.glsl
++++ b/indra/newview/app_settings/shaders/class2/deferred/pbralphaF.glsl
+@@ -49,9 +49,7 @@ out vec4 frag_color;
+ 
+ in vec3 vary_fragcoord;
+ 
+-#ifdef HAS_SUN_SHADOW
+-  uniform vec2 screen_res;
+-#endif
++uniform vec2 screen_res;
+ 
+ in vec3 vary_position;
+ 
+@@ -186,7 +184,7 @@ void main()
+     float gloss      = 1.0 - perceptualRoughness;
+     vec3  irradiance = amblit;
+     vec3  radiance  = vec3(0);
+-    sampleReflectionProbes(irradiance, radiance, vary_position.xy*0.5+0.5, pos.xyz, norm.xyz, gloss, true, amblit);
++    sampleReflectionProbes(irradiance, radiance, gl_FragCoord.xy / screen_res, pos.xyz, norm.xyz, gloss, true, amblit);
+ 
+     vec3 diffuseColor;
+     vec3 specularColor;
+diff --git a/indra/newview/app_settings/shaders/class2/interface/irradianceGenF.glsl b/indra/newview/app_settings/shaders/class2/interface/irradianceGenF.glsl
+index 1d6d6fd..8abb826 100644
+--- a/indra/newview/app_settings/shaders/class2/interface/irradianceGenF.glsl
++++ b/indra/newview/app_settings/shaders/class2/interface/irradianceGenF.glsl
+@@ -72,22 +72,7 @@ vec2 hammersley2d(int i, int N) {
+ // (the normal must be normalized)
+ mat3 generateTBN(vec3 normal)
+ {
+-    vec3 bitangent = vec3(0.0, 1.0, 0.0);
+-
+-    float NdotUp = dot(normal, vec3(0.0, 1.0, 0.0));
+-    float epsilon = 0.0000001;
+-    /*if (1.0 - abs(NdotUp) <= epsilon)
+-    {
+-        // Sampling +Y or -Y, so we need a more robust bitangent.
+-        if (NdotUp > 0.0)
+-        {
+-            bitangent = vec3(0.0, 0.0, 1.0);
+-        }
+-        else
+-        {
+-            bitangent = vec3(0.0, 0.0, -1.0);
+-        }
+-    }*/
++    vec3 bitangent = abs(normal.y) < 0.999 ? vec3(0, 1, 0) : vec3(0, 0, 1);
+ 
+     vec3 tangent = normalize(cross(bitangent, normal));
+     bitangent = cross(normal, tangent);
+@@ -120,7 +105,7 @@ MicrofacetDistributionSample Lambertian(vec2 xi, float roughness)
+ 
+ 
+ // getImportanceSample returns an importance sample direction with pdf in the .w component
+-vec4 getImportanceSample(int sampleIndex, vec3 N, float roughness)
++vec4 getImportanceSample(int sampleIndex, mat3 TBN, float roughness)
+ {
+     // generate a quasi monte carlo point in the unit square [0.1)^2
+     vec2 xi = hammersley2d(sampleIndex, u_sampleCount);
+@@ -138,7 +123,6 @@ vec4 getImportanceSample(int sampleIndex, vec3 N, float roughness)
+         importanceSample.sinTheta * sin(importanceSample.phi),
+         importanceSample.cosTheta
+     ));
+-    mat3 TBN = generateTBN(N);
+     vec3 direction = TBN * localSpaceDirection;
+ 
+     return vec4(direction, importanceSample.pdf);
+@@ -176,10 +160,11 @@ float computeLod(float pdf)
+ vec4 filterColor(vec3 N)
+ {
+     vec4 color = vec4(0.f);
++    mat3 TBN = generateTBN(normalize(N));
+ 
+     for(int i = 0; i < u_sampleCount; ++i)
+     {
+-        vec4 importanceSample = getImportanceSample(i, N, 1.0);
++        vec4 importanceSample = getImportanceSample(i, TBN, 1.0);
+ 
+         vec3 H = vec3(importanceSample.xyz);
+         float pdf = importanceSample.w;
+@@ -211,4 +196,3 @@ void main()
+ 
+     frag_color = max(color, vec4(0));
+ }
+-
+diff --git a/indra/newview/app_settings/shaders/class3/deferred/materialF.glsl b/indra/newview/app_settings/shaders/class3/deferred/materialF.glsl
+index 5708fc3..7b0d897 100644
+--- a/indra/newview/app_settings/shaders/class3/deferred/materialF.glsl
++++ b/indra/newview/app_settings/shaders/class3/deferred/materialF.glsl
+@@ -53,6 +53,7 @@ in vec3 vary_position;
+ 
+ void mirrorClip(vec3 pos);
+ vec4 encodeNormal(vec3 n, float env, float gbuffer_flag);
++float filterSpecularRoughness(float perceptualRoughness, vec3 n);
+ 
+ #if (DIFFUSE_ALPHA_MODE == DIFFUSE_ALPHA_MODE_BLEND)
+ 
+@@ -293,19 +294,21 @@ float getShadow(vec3 pos, vec3 norm)
+ 
+ void main()
+ {
+-    mirrorClip(vary_position);
+-    waterClip();
+-
+     // diffcol == diffuse map combined with vertex color
+     vec4 diffcol = texture(diffuseMap, vary_texcoord0.xy);
+     diffcol.rgb *= vertex_color.rgb;
+-    alphaMask(diffcol.a);
+ 
+     // spec == specular map combined with specular color
+     vec4 spec = getSpecular();
+     float env = env_intensity * spec.a;
+     float glossiness = specular_color.a;
+     vec3 norm = getNormal(glossiness);
++    glossiness = 1.0 - filterSpecularRoughness(1.0 - glossiness, norm);
++
++    // Evaluate normal derivatives before any potentially non-uniform discard.
++    mirrorClip(vary_position);
++    waterClip();
++    alphaMask(diffcol.a);
+ 
+     float emissive = getEmissive(diffcol);
+ 
+@@ -339,7 +342,7 @@ void main()
+     vec3 ambenv = amblit;
+     vec3 glossenv;
+     vec3 legacyenv;
+-    sampleReflectionProbesLegacy(ambenv, glossenv, legacyenv, pos.xy*0.5+0.5, pos.xyz, norm.xyz, glossiness, env, true, amblit_linear);
++    sampleReflectionProbesLegacy(ambenv, glossenv, legacyenv, gl_FragCoord.xy / screen_res, pos.xyz, norm.xyz, glossiness, env, true, amblit_linear);
+ 
+     color = ambenv;
+ 
+@@ -381,7 +384,7 @@ void main()
+             float gtdenom = 2 * nh;
+             float gt = max(0,(min(gtdenom * nv / vh, gtdenom * nl / vh)));
+ 
+-            float scol = shadow*fres*texture(lightFunc, vec2(nh, glossiness)).r*gt/(nh*nl);
++            float scol = shadow*fres*texture(lightFunc, vec2(nh, glossiness)).r*gt/(nh*max(nl, 1e-6));
+             color.rgb += lit*scol*sunlit_linear.rgb*spec.rgb;
+         }
+ 
+@@ -441,5 +444,3 @@ void main()
+ 
+ #endif
+ }
+-
+-
+diff --git a/indra/newview/app_settings/shaders/class3/deferred/multiPointLightF.glsl b/indra/newview/app_settings/shaders/class3/deferred/multiPointLightF.glsl
+index b419839..d0355c5 100644
+--- a/indra/newview/app_settings/shaders/class3/deferred/multiPointLightF.glsl
++++ b/indra/newview/app_settings/shaders/class3/deferred/multiPointLightF.glsl
+@@ -114,7 +114,7 @@ void main()
+             float dist = lightDist / lightSize;
+             if (dist <= 1.0)
+             {
+-                lv /= lightDist;
++                lv /= max(lightDist, 1e-8);
+ 
+                 float dist_atten = calcLegacyDistanceAttenuation(dist, falloff);
+ 
+@@ -163,7 +163,7 @@ void main()
+ 
+                         if (nh > 0.0)
+                         {
+-                            float scol = fres * texture(lightFunc, vec2(nh, spec.a)).r * gt / (nh * nl);
++                            float scol = fres * texture(lightFunc, vec2(nh, spec.a)).r * gt / (nh * max(nl, 1e-6));
+                             col += lit * scol * light_col[i].rgb * spec.rgb;
+                         }
+                     }
+diff --git a/indra/newview/app_settings/shaders/class3/deferred/pointLightF.glsl b/indra/newview/app_settings/shaders/class3/deferred/pointLightF.glsl
+index e44f614..96e0c1d 100644
+--- a/indra/newview/app_settings/shaders/class3/deferred/pointLightF.glsl
++++ b/indra/newview/app_settings/shaders/class3/deferred/pointLightF.glsl
+@@ -75,23 +75,27 @@ void main()
+     vec3 final_color = vec3(0);
+     vec2 tc          = getScreenCoord(vary_fragcoord);
+     vec3 pos         = getPosition(tc).xyz;
++    vec3 lv = trans_center.xyz - pos;
++    if (size <= 0.0 || dot(lv, lv) >= size * size)
++    {
++        discard;
++    }
+     GBufferInfo gb = getGBuffer(tc);
+ 
+     vec3 n = gb.normal;
++    if (dot(n, lv) <= 0.0)
++    {
++        discard;
++    }
+ 
+     vec3 diffuse = gb.albedo.rgb;
+     vec4 spec    = gb.specular;
+ 
+     // Common half vectors calcs
+-    vec3  lv = trans_center.xyz-pos;
+     vec3  h, l, v = -normalize(pos);
+     float nh, nl, nv, vh, lightDist;
+     calcHalfVectors(lv, n, v, h, l, nh, nl, nv, vh, lightDist);
+ 
+-    if (lightDist >= size)
+-    {
+-        discard;
+-    }
+     float dist = lightDist / size;
+     float dist_atten = calcLegacyDistanceAttenuation(dist, falloff);
+ 
+@@ -121,10 +125,6 @@ void main()
+     }
+     else
+     {
+-        if (nl < 0.0)
+-        {
+-            discard;
+-        }
+         diffuse = srgb_to_linear(diffuse);
+         spec.rgb = srgb_to_linear(spec.rgb);
+ 
+@@ -143,7 +143,7 @@ void main()
+ 
+             if (nh > 0.0)
+             {
+-                float scol = fres*texture(lightFunc, vec2(nh, spec.a)).r*gt/(nh*nl);
++                float scol = fres*texture(lightFunc, vec2(nh, spec.a)).r*gt/(nh*max(nl, 1e-6));
+                 final_color += lit*scol*color.rgb*spec.rgb;
+             }
+         }
+diff --git a/indra/newview/app_settings/shaders/class3/deferred/reflectionProbeF.glsl b/indra/newview/app_settings/shaders/class3/deferred/reflectionProbeF.glsl
+index ee975e2..6f6575a 100644
+--- a/indra/newview/app_settings/shaders/class3/deferred/reflectionProbeF.glsl
++++ b/indra/newview/app_settings/shaders/class3/deferred/reflectionProbeF.glsl
+@@ -90,6 +90,20 @@ int probeIndex[REF_SAMPLE_COUNT];
+ // number of probes stored in probeIndex
+ int probeInfluences = 0;
+ 
++void appendProbe(int index)
++{
++    // Reserve the final slot for the automatic/void probe, including the water path.
++    int capacity = index == 0 ? REF_SAMPLE_COUNT : REF_SAMPLE_COUNT - 1;
++    if (index == 0 && probeInfluences > 0 && probeIndex[probeInfluences - 1] == 0)
++    {
++        return;
++    }
++    if (probeInfluences < capacity)
++    {
++        probeIndex[probeInfluences++] = index;
++    }
++}
++
+ bool isAbove(vec3 pos, vec4 plane)
+ {
+     return (dot(plane.xyz, pos) + plane.w) > 0;
+@@ -148,18 +162,18 @@ int getStartIndex(vec3 pos)
+ // populate "probeIndex" with N probe indices that influence pos where N is REF_SAMPLE_COUNT
+ void preProbeSample(vec3 pos)
+ {
++    probeInfluences = 0;
+ #if REFMAP_LEVEL > 0
+ 
+     int start = getStartIndex(pos);
+ 
+     // TODO: make some sort of structure that reduces the number of distance checks
+-    for (int i = start; i < refmapCount; ++i)
++    for (int i = start; i < refmapCount && probeInfluences < REF_SAMPLE_COUNT - 1; ++i)
+     {
+         // found an influencing probe
+         if (shouldSampleProbe(i, pos))
+         {
+-            probeIndex[probeInfluences] = i;
+-            ++probeInfluences;
++            appendProbe(i);
+ 
+             int neighborIdx = refIndex[i].y;
+             if (neighborIdx != -1)
+@@ -167,7 +181,7 @@ void preProbeSample(vec3 pos)
+                 int neighborCount = refIndex[i].z;
+ 
+                 int count = 0;
+-                while (count < neighborCount)
++                while (count < neighborCount && probeInfluences < REF_SAMPLE_COUNT - 1)
+                 {
+                     // check up to REF_SAMPLE_COUNT-1 neighbors (neighborIdx is ivec4 index)
+ 
+@@ -175,8 +189,8 @@ void preProbeSample(vec3 pos)
+                     int idx = refNeighbor[neighborIdx].x;
+                     if (shouldSampleProbe(idx, pos))
+                     {
+-                        probeIndex[probeInfluences++] = idx;
+-                        if (probeInfluences == REF_SAMPLE_COUNT)
++                        appendProbe(idx);
++                        if (probeInfluences >= REF_SAMPLE_COUNT - 1)
+                         {
+                             break;
+                         }
+@@ -191,8 +205,8 @@ void preProbeSample(vec3 pos)
+                     idx = refNeighbor[neighborIdx].y;
+                     if (shouldSampleProbe(idx, pos))
+                     {
+-                        probeIndex[probeInfluences++] = idx;
+-                        if (probeInfluences == REF_SAMPLE_COUNT)
++                        appendProbe(idx);
++                        if (probeInfluences >= REF_SAMPLE_COUNT - 1)
+                         {
+                             break;
+                         }
+@@ -207,8 +221,8 @@ void preProbeSample(vec3 pos)
+                     idx = refNeighbor[neighborIdx].z;
+                     if (shouldSampleProbe(idx, pos))
+                     {
+-                        probeIndex[probeInfluences++] = idx;
+-                        if (probeInfluences == REF_SAMPLE_COUNT)
++                        appendProbe(idx);
++                        if (probeInfluences >= REF_SAMPLE_COUNT - 1)
+                         {
+                             break;
+                         }
+@@ -223,8 +237,8 @@ void preProbeSample(vec3 pos)
+                     idx = refNeighbor[neighborIdx].w;
+                     if (shouldSampleProbe(idx, pos))
+                     {
+-                        probeIndex[probeInfluences++] = idx;
+-                        if (probeInfluences == REF_SAMPLE_COUNT)
++                        appendProbe(idx);
++                        if (probeInfluences >= REF_SAMPLE_COUNT - 1)
+                         {
+                             break;
+                         }
+@@ -241,10 +255,10 @@ void preProbeSample(vec3 pos)
+ 
+     if (sample_automatic)
+     { // probe at index 0 is a special probe for smoothing out automatic probes
+-        probeIndex[probeInfluences++] = 0;
++        appendProbe(0);
+     }
+ #else
+-    probeIndex[probeInfluences++] = 0;
++    appendProbe(0);
+ #endif
+ }
+ 
+@@ -785,7 +799,7 @@ void sampleReflectionProbesWater(inout vec3 ambenv, inout vec3 glossenv,
+     preProbeSample(pos);
+     sample_automatic = true;
+     // always include void probe on water
+-    probeIndex[probeInfluences++] = 0;
++    appendProbe(0);
+ 
+     doProbeSample(ambenv, glossenv, tc, pos, norm, glossiness, false, amblit);
+ }
+@@ -908,4 +922,3 @@ void applyGlossEnv(inout vec3 color, vec3 glossenv, vec4 spec, vec3 pos, vec3 no
+     reflected_color *= (envIntensity*fresnel);
+     color = mix(color.rgb, reflected_color*0.5, envIntensity);
+  }
+-
+diff --git a/indra/newview/app_settings/shaders/class3/deferred/softenLightF.glsl b/indra/newview/app_settings/shaders/class3/deferred/softenLightF.glsl
+index 948387a..f96f0c3 100644
+--- a/indra/newview/app_settings/shaders/class3/deferred/softenLightF.glsl
++++ b/indra/newview/app_settings/shaders/class3/deferred/softenLightF.glsl
+@@ -258,7 +258,7 @@ void main()
+                 float gtdenom = 2 * nh;
+                 float gt = max(0,(min(gtdenom * nv / vh, gtdenom * nl / vh)));
+ 
+-                scol *= fres*texture(lightFunc, vec2(nh, spec.a)).r*gt/(nh*nl);
++                scol *= fres*texture(lightFunc, vec2(nh, spec.a)).r*gt/(nh*max(nl, 1e-6));
+                 color.rgb += lit*scol*sunlit_linear.rgb*spec.rgb;
+             }
+ 
+diff --git a/indra/newview/app_settings/shaders/class3/deferred/spotLightF.glsl b/indra/newview/app_settings/shaders/class3/deferred/spotLightF.glsl
+index 72907f8..961dc54 100644
+--- a/indra/newview/app_settings/shaders/class3/deferred/spotLightF.glsl
++++ b/indra/newview/app_settings/shaders/class3/deferred/spotLightF.glsl
+@@ -169,6 +169,7 @@ void main()
+             float amb_da = 0.0;
+ 
+             lv = normalize(lv);
++            pbrPunctual(diffuseColor, specularColor, perceptualRoughness, metallic, n.xyz, v, lv, nl, diffPunc, specPunc);
+ 
+             if (nl > 0.0)
+             {
+@@ -178,13 +179,10 @@ void main()
+ 
+                 vec3 intensity = dist_atten * dlit * 3.25 * shadow; // Legacy attenuation, magic number to balance with legacy materials
+ 
+-                pbrPunctual(diffuseColor, specularColor, perceptualRoughness, metallic, n.xyz, v, normalize(lv), nl, diffPunc, specPunc);
+-
+                 final_color += intensity * clamp(nl * (diffPunc + specPunc), vec3(0), vec3(10));
+             }
+ 
+             amb_rgb = getProjectedLightAmbiance( amb_da, dist_atten, lit, nl, 1.0, proj_tc.xy ) * 3.25; //magic number to balance with legacy ambiance
+-            pbrPunctual(diffuseColor, specularColor, perceptualRoughness, metallic, n.xyz, v, normalize(lv), nl, diffPunc, specPunc);
+ 
+             final_color += amb_rgb * clamp(nl * (diffPunc + specPunc), vec3(0), vec3(10));
+         }
+@@ -232,7 +230,7 @@ void main()
+ 
+             if (nh > 0.0)
+             {
+-                float scol = fres*texture(lightFunc, vec2(nh, spec.a)).r*gt/(nh*nl);
++                float scol = fres*texture(lightFunc, vec2(nh, spec.a)).r*gt/(nh*max(nl, 1e-6));
+                 vec3 speccol = dlit*scol*spec.rgb*shadow;
+                 speccol = clamp(speccol, vec3(0), vec3(1));
+                 final_color += speccol;
+diff --git a/indra/newview/app_settings/shaders/class3/environment/waterF.glsl b/indra/newview/app_settings/shaders/class3/environment/waterF.glsl
+index db364cc..cc2661f 100644
+--- a/indra/newview/app_settings/shaders/class3/environment/waterF.glsl
++++ b/indra/newview/app_settings/shaders/class3/environment/waterF.glsl
+@@ -148,6 +148,21 @@ void generateWaveNormals(out vec3 wave1, out vec3 wave2, out vec3 wave3)
+ 
+     vec2 bigwave = vec2(refCoord.w, view.w);
+ 
++    if (blend_factor <= 0.0)
++    {
++        wave1 = texture(bumpMap, bigwave).xyz * 2.0 - 1.0;
++        wave2 = texture(bumpMap, littleWave.xy).xyz * 2.0 - 1.0;
++        wave3 = texture(bumpMap, littleWave.zw).xyz * 2.0 - 1.0;
++        return;
++    }
++    if (blend_factor >= 1.0)
++    {
++        wave1 = texture(bumpMap2, bigwave).xyz * 2.0 - 1.0;
++        wave2 = texture(bumpMap2, littleWave.xy).xyz * 2.0 - 1.0;
++        wave3 = texture(bumpMap2, littleWave.zw).xyz * 2.0 - 1.0;
++        return;
++    }
++
+     vec3 wave1_a = texture(bumpMap, bigwave).xyz * 2.0 - 1.0;
+     vec3 wave2_a = texture(bumpMap, littleWave.xy).xyz * 2.0 - 1.0;
+     vec3 wave3_a = texture(bumpMap, littleWave.zw).xyz * 2.0 - 1.0;
+@@ -344,6 +359,6 @@ void main()
+ 
+     float spec = min(max(max(punctual.r, punctual.g), punctual.b), 0);
+ 
+-    frag_color = min(vec4(1),max(vec4(color.rgb, spec * water_mask), vec4(0)));
++    // Keep HDR highlights for the exposure/tone-map pass and bound half-float output.
++    frag_color = vec4(clamp(color.rgb, vec3(0), vec3(65504)), clamp(spec * water_mask, 0.0, 1.0));
+ }
+-
+diff --git a/indra/newview/featuretable.txt b/indra/newview/featuretable.txt
+index 1090dd8..1dce8eb 100644
+--- a/indra/newview/featuretable.txt
++++ b/indra/newview/featuretable.txt
+@@ -427,7 +427,8 @@ RenderGLMultiThreadedMedia  1   0
+ RenderDownScaleMethod       1   0
+ 
+ list AMD
+-RenderGLMultiThreadedTextures       1   1
++RenderGLMultiThreadedTextures       1   0
++RenderGLMultiThreadedMedia           1   0
+ 
+ list GL3
+ RenderFSAAType  			0	0
+@@ -445,4 +446,3 @@ RenderTerrainPBRDetail      1   -1
+ 
+ list VaryingVectors16orLess
+ RenderTerrainPBRPlanarSampleCount 1   1
+-
+diff --git a/indra/newview/llappviewer.cpp b/indra/newview/llappviewer.cpp
+index 698a5a8..e91b6ea 100644
+--- a/indra/newview/llappviewer.cpp
++++ b/indra/newview/llappviewer.cpp
+@@ -390,7 +390,7 @@ const std::string LOGOUT_MARKER_FILE_NAME("BlackDragon.logout_marker");
+ static std::string gLaunchFileOnQuit;
+ 
+ // Used on Win32 for other apps to identify our window (eg, win_setup)
+-const char* const VIEWER_WINDOW_CLASSNAME = "Black Dragon";
++const char* const VIEWER_WINDOW_CLASSNAME = "Black Dragon Black Kitty Fix";
+ 
+ //----------------------------------------------------------------------------
+ 
+@@ -693,7 +693,7 @@ LLAppViewer::LLAppViewer()
+ 
+     // Need to do this initialization before we do anything else, since anything
+     // that touches files should really go through the lldir API
+-    gDirUtilp->initAppDirs("BlackDragon");
++    gDirUtilp->initAppDirs("BlackDragonBlackKittyFix");
+     //
+     // IMPORTANT! Do NOT put anything that will write
+     // into the log files during normal startup until AFTER
+diff --git a/indra/newview/llappviewerwin32.cpp b/indra/newview/llappviewerwin32.cpp
+index 0620b62..a4f075f 100644
+--- a/indra/newview/llappviewerwin32.cpp
++++ b/indra/newview/llappviewerwin32.cpp
+@@ -47,8 +47,10 @@
+ #include "llviewercontrol.h"
+ #include "lldxhardware.h"
+ 
++#ifdef LL_NVAPI
+ #include "nvapi/nvapi.h"
+ #include "nvapi/NvApiDriverSettings.h"
++#endif
+ 
+ #include <stdlib.h>
+ 
+@@ -226,6 +228,7 @@ const std::string LLAppViewerWin32::sWindowClass = "Second Life";
+     This function is used to print to the command line a text message
+     describing the nvapi error and quits
+ */
++#ifdef LL_NVAPI
+ void nvapi_error(NvAPI_Status status)
+ {
+     NvAPI_ShortString szDesc = {0};
+@@ -236,6 +239,8 @@ void nvapi_error(NvAPI_Status status)
+     //llassert(status == NVAPI_OK);
+ }
+ 
++#endif // LL_NVAPI
++
+ // Create app mutex creates a unique global windows object.
+ // If the object can be created it returns true, otherwise
+ // it returns false. The false result can be used to determine
+@@ -257,6 +262,7 @@ bool create_app_mutex()
+     return result;
+ }
+ 
++#ifdef LL_NVAPI
+ void ll_nvapi_init(NvDRSSessionHandle hSession)
+ {
+     // (2) load all the system settings into the session
+@@ -412,6 +418,8 @@ void ll_nvapi_init(NvDRSSessionHandle hSession)
+     }
+ }
+ 
++#endif // LL_NVAPI
++
+ //#define DEBUGGING_SEH_FILTER 1
+ #if DEBUGGING_SEH_FILTER
+ #   define WINMAIN DebuggingWinMain
+@@ -481,6 +489,7 @@ int APIENTRY WINMAIN(HINSTANCE hInstance,
+         return -1;
+     }
+ 
++#ifdef LL_NVAPI
+     NvDRSSessionHandle hSession = 0;
+     static LLCachedControl<bool> use_nv_api(gSavedSettings, "NvAPICreateApplicationProfile", true);
+     if (use_nv_api)
+@@ -506,6 +515,8 @@ int APIENTRY WINMAIN(HINSTANCE hInstance,
+         }
+     }
+ 
++#endif // LL_NVAPI
++
+     // Have to wait until after logging is initialized to display LFH info
+     if (num_heaps > 0)
+     {
+@@ -562,12 +573,14 @@ int APIENTRY WINMAIN(HINSTANCE hInstance,
+     delete viewer_app_ptr;
+     viewer_app_ptr = NULL;
+ 
++#ifdef LL_NVAPI
+     // (NVAPI) (6) We clean up. This is analogous to doing a free()
+     if (hSession)
+     {
+         NvAPI_DRS_DestroySession(hSession);
+         hSession = 0;
+     }
++#endif // LL_NVAPI
+ 
+     return 0;
+ }
+diff --git a/indra/newview/lldrawpool.cpp b/indra/newview/lldrawpool.cpp
+index 82dacfe..ab381dc 100644
+--- a/indra/newview/lldrawpool.cpp
++++ b/indra/newview/lldrawpool.cpp
+@@ -720,6 +720,8 @@ bool LLRenderPass::uploadMatrixPalette(LLVOAvatar* avatar, LLMeshSkinInfo* skinI
+         count,
+         false,
+         (GLfloat*)&(mpc.mGLMp[0]));
++    LLGLSLShader::sCurBoundShaderPtr->uniform1i(LLViewerShaderMgr::AVATAR_MATRIX_SIZE, count);
++    LLGLSLShader::sCurBoundShaderPtr->uniform3fv(LLViewerShaderMgr::SKIN_ORIGIN, 1, mpc.mSkinOrigin.mV);
+ 
+     return true;
+ }
+@@ -756,6 +758,8 @@ bool LLRenderPass::uploadMatrixPalette(LLVOAvatar* avatar, LLMeshSkinInfo* skinI
+             count,
+             false,
+             (GLfloat*)&(mpc.mGLMp[0]));
++        LLGLSLShader::sCurBoundShaderPtr->uniform1i(LLViewerShaderMgr::AVATAR_MATRIX_SIZE, count);
++        LLGLSLShader::sCurBoundShaderPtr->uniform3fv(LLViewerShaderMgr::SKIN_ORIGIN, 1, mpc.mSkinOrigin.mV);
+     }
+ 
+     return !skipLastSkin;
+@@ -794,6 +798,8 @@ bool LLRenderPass::uploadMatrixPalette(LLVOAvatar* avatar, LLMeshSkinInfo* skinI
+             count,
+             false,
+             (GLfloat*)&(mpc.mGLMp[0]));
++        LLGLSLShader::sCurBoundShaderPtr->uniform1i(LLViewerShaderMgr::AVATAR_MATRIX_SIZE, count);
++        LLGLSLShader::sCurBoundShaderPtr->uniform3fv(LLViewerShaderMgr::SKIN_ORIGIN, 1, mpc.mSkinOrigin.mV);
+     }
+ 
+     return !skipLastSkin;
+@@ -954,20 +960,21 @@ bool LLRenderPass::uploadLastMatrixPalette(LLVOAvatar* avatar, LLMeshSkinInfo* s
+     {
+         return false;
+     }
+-
+     const LLVOAvatar::MatrixPaletteCache& mpc = avatar->updateSkinInfoMatrixPalette(skinInfo);
+     U32 count = static_cast<U32>(mpc.mMatrixPalette.size());
+-
+-    if (count == 0 || mpc.mLastGLMp.empty())
++    if (count == 0)
+     {
+         return false;
+     }
+-
+-    LLGLSLShader::sCurBoundShaderPtr->uniformMatrix3x4fv(LLViewerShaderMgr::AVATAR_LAST_MATRIX,
+-        count,
+-        false,
+-        (GLfloat*)&(mpc.mLastGLMp[0]));
+-
++    // Newly visible or changed meshes have no compatible preceding-frame palette.
++    const bool have_previous = mpc.mLastFrame == static_cast<S32>(gFrameCount - 1)
++        && mpc.mLastGLMp.size() == mpc.mGLMp.size();
++    const auto& palette = have_previous ? mpc.mLastGLMp : mpc.mGLMp;
++    const LLVector3& origin = have_previous ? mpc.mLastSkinOrigin : mpc.mSkinOrigin;
++    auto* shader = LLGLSLShader::sCurBoundShaderPtr;
++    shader->uniformMatrix3x4fv(LLViewerShaderMgr::AVATAR_LAST_MATRIX, count, false, palette.data());
++    shader->uniform1i(LLViewerShaderMgr::AVATAR_MATRIX_SIZE, count);
++    shader->uniform3fv(LLViewerShaderMgr::AVATAR_LAST_SKIN_ORIGIN, 1, origin.mV);
+     return true;
+ }
+ 
+diff --git a/indra/newview/lldrawpoolwater.cpp b/indra/newview/lldrawpoolwater.cpp
+index 6fd8889..c6c9cd7 100644
+--- a/indra/newview/lldrawpoolwater.cpp
++++ b/indra/newview/lldrawpoolwater.cpp
+@@ -197,6 +197,28 @@ void LLDrawPoolWater::renderPostDeferred(S32 pass)
+ 
+     gPipeline.bindDeferredShader(*shader, nullptr, &gPipeline.mWaterDis);
+ 
++    if (!underwater && !gCubeSnapshot && LLPipeline::sRenderTransparentWater &&
++        LLPipeline::RenderScreenSpaceReflections)
++    {
++        // The previous-frame scene map already contains water, allowing SSR to
++        // reflect its own output. Use the matching color/depth captured before
++        // this water pass, which are both in the current camera's coordinate frame.
++        S32 channel = shader->enableTexture(LLShaderMgr::SCENE_MAP);
++        if (channel > -1)
++        {
++            gGL.getTexUnit(channel)->bind(&gPipeline.mWaterDis);
++        }
++        channel = shader->enableTexture(LLShaderMgr::SCENE_DEPTH);
++        if (channel > -1)
++        {
++            gGL.getTexUnit(channel)->bind(&gPipeline.mWaterDis, true);
++        }
++
++        const glm::mat4 identity(1.0f);
++        shader->uniformMatrix4fv(LLShaderMgr::MODELVIEW_DELTA_MATRIX, 1, GL_FALSE, glm::value_ptr(identity));
++        shader->uniformMatrix4fv(LLShaderMgr::INVERSE_MODELVIEW_DELTA_MATRIX, 1, GL_FALSE, glm::value_ptr(identity));
++    }
++
+     LLViewerTexture* tex_a = mWaterNormp[0];
+     LLViewerTexture* tex_b = mWaterNormp[1];
+ 
+diff --git a/indra/newview/llfloaterbigpreview.cpp b/indra/newview/llfloaterbigpreview.cpp
+new file mode 100644
+index 0000000..f1887c3
+--- /dev/null
++++ b/indra/newview/llfloaterbigpreview.cpp
+@@ -0,0 +1,109 @@
++/**
++* @file llfloaterbigpreview.cpp
++* @brief Display of extended (big) preview for snapshots and SL Share
++* @author merov@lindenlab.com
++*
++* $LicenseInfo:firstyear=2013&license=viewerlgpl$
++* Second Life Viewer Source Code
++* Copyright (C) 2013, Linden Research, Inc.
++*
++* This library is free software; you can redistribute it and/or
++* modify it under the terms of the GNU Lesser General Public
++* License as published by the Free Software Foundation;
++* version 2.1 of the License only.
++*
++* This library is distributed in the hope that it will be useful,
++* but WITHOUT ANY WARRANTY; without even the implied warranty of
++* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++* Lesser General Public License for more details.
++*
++* You should have received a copy of the GNU Lesser General Public
++* License along with this library; if not, write to the Free Software
++* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
++*
++* Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
++* $/LicenseInfo$
++*/
++
++#include "llviewerprecompiledheaders.h"
++
++#include "llfloaterbigpreview.h"
++#include "llsnapshotlivepreview.h"
++
++///////////////////////
++//LLFloaterBigPreview//
++///////////////////////
++
++LLFloaterBigPreview::LLFloaterBigPreview(const LLSD& key) : LLFloater(key),
++    mPreviewPlaceholder(NULL),
++    mFloaterOwner(NULL)
++{
++}
++
++LLFloaterBigPreview::~LLFloaterBigPreview()
++{
++    if (mPreviewHandle.get())
++    {
++        mPreviewHandle.get()->die();
++    }
++}
++
++void LLFloaterBigPreview::onCancel()
++{
++    closeFloater();
++}
++
++void LLFloaterBigPreview::closeOnFloaterOwnerClosing(LLFloater* floaterp)
++{
++    if (isFloaterOwner(floaterp))
++    {
++        closeFloater();
++    }
++}
++
++bool LLFloaterBigPreview::postBuild()
++{
++    mPreviewPlaceholder = getChild<LLUICtrl>("big_preview_placeholder");
++    return LLFloater::postBuild();
++}
++
++void LLFloaterBigPreview::draw()
++{
++    LLFloater::draw();
++
++    LLSnapshotLivePreview * previewp = static_cast<LLSnapshotLivePreview *>(mPreviewHandle.get());
++
++    // Display the preview if one is available
++    if (previewp && previewp->getBigThumbnailImage())
++    {
++        // Get the preview rect
++        const LLRect& preview_rect = mPreviewPlaceholder->getRect();
++
++        // Get the preview texture size
++        S32 thumbnail_w = previewp->getBigThumbnailWidth();
++        S32 thumbnail_h = previewp->getBigThumbnailHeight();
++
++        // Compute the scaling ratio and the size of the final texture in the rect: we want to prevent anisotropic scaling (distorted in x and y)
++        F32 ratio = llmax((F32)(thumbnail_w)/(F32)(preview_rect.getWidth()), (F32)(thumbnail_h)/(F32)(preview_rect.getHeight()));
++        thumbnail_w = (S32)((F32)(thumbnail_w)/ratio);
++        thumbnail_h = (S32)((F32)(thumbnail_h)/ratio);
++
++        // Compute the preview offset within the preview rect: we want to center that preview in the available rect
++        const S32 local_offset_x = (preview_rect.getWidth()  - thumbnail_w) / 2 ;
++        const S32 local_offset_y = (preview_rect.getHeight() - thumbnail_h) / 2 ;
++
++        // Compute preview offset within the floater rect
++        S32 offset_x = preview_rect.mLeft   + local_offset_x;
++        S32 offset_y = preview_rect.mBottom + local_offset_y;
++
++        gGL.matrixMode(LLRender::MM_MODELVIEW);
++        // Apply floater transparency to the texture unless the floater is focused.
++        F32 alpha = getTransparencyType() == TT_ACTIVE ? 1.0f : getCurrentTransparency();
++        LLColor4 color = LLColor4::white;
++
++        // Draw the preview texture
++        gl_draw_scaled_image(offset_x, offset_y,
++                             thumbnail_w, thumbnail_h,
++                             previewp->getBigThumbnailImage(), color % alpha);
++    }
++}
+diff --git a/indra/newview/llfloaterbigpreview.h b/indra/newview/llfloaterbigpreview.h
+new file mode 100644
+index 0000000..eda1f65
+--- /dev/null
++++ b/indra/newview/llfloaterbigpreview.h
+@@ -0,0 +1,53 @@
++/**
++* @file   llfloaterbigpreview.h
++* @brief  Display of extended (big) preview for snapshots
++* @author merov@lindenlab.com
++*
++* $LicenseInfo:firstyear=2013&license=viewerlgpl$
++* Second Life Viewer Source Code
++* Copyright (C) 2013, Linden Research, Inc.
++*
++* This library is free software; you can redistribute it and/or
++* modify it under the terms of the GNU Lesser General Public
++* License as published by the Free Software Foundation;
++* version 2.1 of the License only.
++*
++* This library is distributed in the hope that it will be useful,
++* but WITHOUT ANY WARRANTY; without even the implied warranty of
++* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++* Lesser General Public License for more details.
++*
++* You should have received a copy of the GNU Lesser General Public
++* License along with this library; if not, write to the Free Software
++* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
++*
++* Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
++* $/LicenseInfo$
++*/
++#ifndef LL_LLFLOATERBIGPREVIEW_H
++#define LL_LLFLOATERBIGPREVIEW_H
++
++#include "llfloater.h"
++
++class LLFloaterBigPreview : public LLFloater
++{
++public:
++    LLFloaterBigPreview(const LLSD& key);
++    ~LLFloaterBigPreview();
++
++    bool postBuild();
++    void draw();
++    void onCancel();
++
++    void setPreview(LLView* previewp) { mPreviewHandle = previewp->getHandle(); }
++    void setFloaterOwner(LLFloater* floaterp) { mFloaterOwner = floaterp; }
++    bool isFloaterOwner(LLFloater* floaterp) const { return (mFloaterOwner == floaterp); }
++    void closeOnFloaterOwnerClosing(LLFloater* floaterp);
++
++private:
++    LLHandle<LLView> mPreviewHandle;
++    LLUICtrl*  mPreviewPlaceholder;
++    LLFloater* mFloaterOwner;
++};
++
++#endif // LL_LLFLOATERBIGPREVIEW_H
+diff --git a/indra/newview/llviewershadermgr.cpp b/indra/newview/llviewershadermgr.cpp
+index 368ee89..3ad0c33 100644
+--- a/indra/newview/llviewershadermgr.cpp
++++ b/indra/newview/llviewershadermgr.cpp
+@@ -43,6 +43,7 @@
+ #include "pipeline.h"
+ 
+ #include "llfile.h"
++#include "lldiriterator.h"
+ #include "llviewerwindow.h"
+ #include "llwindow.h"
+ 
+@@ -535,6 +536,61 @@ S32 LLViewerShaderMgr::getShaderLevel(S32 type)
+ //============================================================================
+ // Shader Management
+ 
++// Hash sorted relative names and contents, including shared GLSL helpers. Run once
++// per reload so same-version developer edits cannot reuse stale program binaries.
++static bool hashShaderSources(HBXXH128& hash, const std::string& root, const std::string& relative = "")
++{
++    const std::string directory = root + relative;
++    if (!LLFile::isdir(directory))
++    {
++        return false;
++    }
++    LLDirIterator iterator(directory, "*");
++    std::vector<std::string> names;
++    std::string name;
++    while (iterator.next(name))
++    {
++        if (name != "." && name != "..")
++        {
++            names.push_back(name);
++        }
++    }
++    std::sort(names.begin(), names.end());
++    for (const auto& entry : names)
++    {
++        const std::string path = directory + entry;
++        if (LLFile::isdir(path))
++        {
++            if (!hashShaderSources(hash, root, relative + entry + "/"))
++            {
++                return false;
++            }
++        }
++        else if (entry.size() >= 5 && entry.compare(entry.size() - 5, 5, ".glsl") == 0)
++        {
++            LLFILE* file = LLFile::fopen(path, "rb");
++            if (!file)
++            {
++                return false;
++            }
++            hash.update(relative + entry);
++            char buffer[8192];
++            size_t count;
++            while ((count = fread(buffer, 1, sizeof(buffer), file)) > 0)
++            {
++                hash.update(buffer, count);
++            }
++            const bool failed = ferror(file) != 0;
++            fclose(file);
++            if (failed)
++            {
++                return false;
++            }
++        }
++    }
++    return true;
++}
++
+ void LLViewerShaderMgr::setShaders()
+ {
+     LL_PROFILE_ZONE_SCOPED;
+@@ -557,20 +613,32 @@ void LLViewerShaderMgr::setShaders()
+ 
+     {
+         static LLCachedControl<bool> shader_cache_enabled(gSavedSettings, "RenderShaderCacheEnabled", true);
+-        static LLUUID old_cache_version;
+-        static LLUUID current_cache_version;
+-        if (current_cache_version.isNull())
++        LLUUID old_cache_version;
++        LLUUID current_cache_version;
++        bool sources_read = false;
+         {
+             HBXXH128 hash_obj;
+             hash_obj.update(LLVersionInfo::instance().getVersion());
++            // Program binaries are driver-specific.  Do not reuse binaries
++            // after an OpenGL driver update even when the viewer version is
++            // unchanged.
++            hash_obj.update(gGLManager.mDriverVersionVendorString);
++            sources_read = hashShaderSources(hash_obj,
++                gDirUtilp->getExpandedFilename(LL_PATH_APP_SETTINGS, "shaders") + "/");
+             current_cache_version = hash_obj.digest();
+ 
+             old_cache_version = LLUUID(gSavedSettings.getString("RenderShaderCacheVersion"));
+             gSavedSettings.setString("RenderShaderCacheVersion", current_cache_version.asString());
+         }
+ 
++        bool use_shader_cache = shader_cache_enabled && sources_read;
++#if LL_WINDOWS
++        use_shader_cache = use_shader_cache &&
++            !(gGLManager.mIsAMD && gSavedSettings.getBOOL("RenderAMDDisableShaderCache"));
++#endif
++        LL_INFOS("ShaderLoading") << "Shader binary cache enabled: " << use_shader_cache << LL_ENDL;
+         initShaderCache(
+-            shader_cache_enabled,
++            use_shader_cache,
+             old_cache_version,
+             current_cache_version,
+             LLAppViewer::instance()->isSecondInstance());
+@@ -816,6 +884,28 @@ std::string LLViewerShaderMgr::loadBasicShaders()
+     attribs["MAX_JOINTS_PER_MESH_OBJECT"] =
+         std::to_string(LLSkinningUtil::getMaxJointCount());
+ 
++    // Keep these choices in the global defines so shader binaries and all
++    // separately compiled skinning dependencies use the same test permutation.
++    if (gSavedSettings.getBOOL("RenderRiggedLocalOrigin"))
++    {
++        attribs["RIGGED_LOCAL_ORIGIN"] = "1";
++    }
++    if (gSavedSettings.getBOOL("RenderRiggedDirectNormals"))
++    {
++        attribs["RIGGED_DIRECT_NORMALS"] = "1";
++    }
++    const bool precise_skinning = gSavedSettings.getBOOL("RenderRiggedPreciseMath") &&
++        gGLManager.mGLSLVersionMajor >= 4;
++    attribs["SKIN_PRECISE"] = precise_skinning ? "precise" : "";
++    if (precise_skinning)
++    {
++        attribs["RIGGED_PRECISE_MATH"] = "1";
++    }
++    LL_INFOS("ShaderLoading") << "Rigged skinning tests: local origin="
++        << gSavedSettings.getBOOL("RenderRiggedLocalOrigin") << ", direct normals="
++        << gSavedSettings.getBOOL("RenderRiggedDirectNormals") << ", precise math="
++        << precise_skinning << LL_ENDL;
++
+     static LLCachedControl<bool> emissive(gSavedSettings, "RenderEnableEmissiveBuffer", false);
+ 
+     if (emissive)
+@@ -3797,4 +3887,3 @@ LLViewerShaderMgr::shader_iter LLViewerShaderMgr::endShaders() const
+ {
+     return mShaderList.end();
+ }
+-
+diff --git a/indra/newview/llviewerwindow.cpp b/indra/newview/llviewerwindow.cpp
+index d1128b6..c299759 100644
+--- a/indra/newview/llviewerwindow.cpp
++++ b/indra/newview/llviewerwindow.cpp
+@@ -2110,7 +2110,21 @@ LLViewerWindow::LLViewerWindow(const Params& p)
+ 
+     // Init the image list.  Must happen after GL is initialized and before the images that
+     // LLViewerWindow needs are requested, as well as before LLViewerMedia starts updating images.
+-    LLImageGL::initClass(mWindow, LLViewerTexture::MAX_GL_IMAGE_CATEGORY, false, gSavedSettings.getBOOL("RenderGLMultiThreadedTextures"), gSavedSettings.getBOOL("RenderGLMultiThreadedMedia"));
++    bool threaded_texture_uploads = gSavedSettings.getBOOL("RenderGLMultiThreadedTextures");
++    bool threaded_media_uploads = gSavedSettings.getBOOL("RenderGLMultiThreadedMedia");
++    // Force these settings off on Windows, they're buggy.
++#if LL_WINDOWS
++    if (gGLManager.mIsAMD && gSavedSettings.getBOOL("RenderAMDDisableTextureThreading"))
++    {
++        threaded_texture_uploads = false;
++        threaded_media_uploads = false;
++    }
++#endif
++    LL_INFOS("RenderInit") << "Threaded texture uploads enabled: " << threaded_texture_uploads
++        << " (saved setting: " << gSavedSettings.getBOOL("RenderGLMultiThreadedTextures") << ")" << LL_ENDL;
++    LL_INFOS("RenderInit") << "Threaded media uploads enabled: " << threaded_media_uploads
++        << " (saved setting: " << gSavedSettings.getBOOL("RenderGLMultiThreadedMedia") << ")" << LL_ENDL;
++    LLImageGL::initClass(mWindow, LLViewerTexture::MAX_GL_IMAGE_CATEGORY, false, threaded_texture_uploads, threaded_media_uploads);
+     gTextureList.init();
+     LLViewerTextureManager::init() ;
+     gBumpImageList.init();
+diff --git a/indra/newview/llvoavatar.cpp b/indra/newview/llvoavatar.cpp
+index 1352a07..992ade5 100644
+--- a/indra/newview/llvoavatar.cpp
++++ b/indra/newview/llvoavatar.cpp
+@@ -10317,20 +10317,42 @@ const LLVOAvatar::MatrixPaletteCache& LLVOAvatar::updateSkinInfoMatrixPalette(co
+     U64 hash = skin->mHash;
+     MatrixPaletteCache& entry = mMatrixPaletteCache[hash];
+ 
+-    if (entry.mFrame != gFrameCount)
++    const bool use_local_origin = LLGLSLShader::sGlobalDefines.count("RIGGED_LOCAL_ORIGIN") != 0;
++    if (entry.mFrame != gFrameCount || entry.mUsesLocalOrigin != use_local_origin)
+     {
+         LL_PROFILE_ZONE_SCOPED_CATEGORY_AVATAR;
+ 
+-        if (entry.mFrame > 0)
++        if (entry.mFrame > 0 && entry.mUsesLocalOrigin == use_local_origin)
+         {
+             entry.mLastGLMp = entry.mGLMp;
++            entry.mLastSkinOrigin = entry.mSkinOrigin;
+             entry.mLastFrame = entry.mFrame;
+         }
+ 
++        else
++        {
++            entry.mLastGLMp.clear();
++            entry.mLastFrame = -1;
++            entry.mLastSkinOrigin.clear();
++        }
++
+         entry.mFrame = gFrameCount;
++        entry.mUsesLocalOrigin = use_local_origin;
+ 
+         //build matrix palette
+         U32 count = LLSkinningUtil::getMeshJointCount(skin);
++        if (count == 0)
++        {
++            entry.mMatrixPalette.clear();
++            entry.mGLMp.clear();
++            entry.mLastGLMp.clear();
++            entry.mSkinOrigin.clear();
++            entry.mLastSkinOrigin.clear();
++            entry.mLastFrame = -1;
++            return entry;
++        }
++        entry.mSkinOrigin = use_local_origin
++            ? (mRoot ? mRoot->getWorldPosition() : getPositionAgent()) : LLVector3::zero;
+         entry.mMatrixPalette.resize(count);
+         LLSkinningUtil::initSkinningMatrixPalette(&(entry.mMatrixPalette[0]), count, skin, this);
+ 
+@@ -10349,17 +10371,17 @@ const LLVOAvatar::MatrixPaletteCache& LLVOAvatar::updateSkinInfoMatrixPalette(co
+             mp[idx + 0] = m[0];
+             mp[idx + 1] = m[1];
+             mp[idx + 2] = m[2];
+-            mp[idx + 3] = m[12];
++            mp[idx + 3] = m[12] - entry.mSkinOrigin.mV[VX];
+ 
+             mp[idx + 4] = m[4];
+             mp[idx + 5] = m[5];
+             mp[idx + 6] = m[6];
+-            mp[idx + 7] = m[13];
++            mp[idx + 7] = m[13] - entry.mSkinOrigin.mV[VY];
+ 
+             mp[idx + 8] = m[8];
+             mp[idx + 9] = m[9];
+             mp[idx + 10] = m[10];
+-            mp[idx + 11] = m[14];
++            mp[idx + 11] = m[14] - entry.mSkinOrigin.mV[VZ];
+         }
+     }
+ 
+diff --git a/indra/newview/llvoavatar.h b/indra/newview/llvoavatar.h
+index ffa9d12..96565ec 100644
+--- a/indra/newview/llvoavatar.h
++++ b/indra/newview/llvoavatar.h
+@@ -881,6 +881,10 @@ public:
+         // Float array ready to be sent to GL
+         std::vector<F32> mGLMp;
+ 
++        LLVector3 mSkinOrigin = LLVector3::zero;
++        LLVector3 mLastSkinOrigin = LLVector3::zero;
++        bool mUsesLocalOrigin = false;
++
+         // Previous frame's mGLMp for velocity buffer
+         std::vector<F32> mLastGLMp;
+         S32 mLastFrame = -1;
+diff --git a/indra/newview/pipeline.cpp b/indra/newview/pipeline.cpp
+index 6604cfa..f939e48 100644
+--- a/indra/newview/pipeline.cpp
++++ b/indra/newview/pipeline.cpp
+@@ -1270,7 +1270,7 @@ void LLPipeline::refreshCachedSettings()
+     CameraDoFResScale = gSavedSettings.getF32("CameraDoFResScale");
+     RenderAutoHideSurfaceAreaLimit = gSavedSettings.getF32("RenderAutoHideSurfaceAreaLimit");
+     RenderScreenSpaceReflections = gSavedSettings.getBOOL("RenderScreenSpaceReflections");
+-    RenderScreenSpaceReflectionGlossySamples = gSavedSettings.getS32("RenderScreenSpaceReflectionGlossySamples");
++    RenderScreenSpaceReflectionGlossySamples = llclamp(gSavedSettings.getS32("RenderScreenSpaceReflectionGlossySamples"), 1, 128);
+     RenderBufferVisualization = gSavedSettings.getS32("RenderBufferVisualization");
+     RenderMirrors = gSavedSettings.getBOOL("RenderMirrors");
+     RenderHeroProbeUpdateRate = gSavedSettings.getS32("RenderHeroProbeUpdateRate");
+diff --git a/indra/newview/res/viewerRes.rc b/indra/newview/res/viewerRes.rc
+index 192e0ac..bd21e23 100755
+--- a/indra/newview/res/viewerRes.rc
++++ b/indra/newview/res/viewerRes.rc
+@@ -68,7 +68,7 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_VISIBLE
+ FONT 8, "MS Sans Serif"
+ BEGIN
+     ICON            IDI_LL_ICON,IDC_STATIC,7,7,20,20
+-    LTEXT           "Loading Black Dragon...",666,36,13,211,8
++    LTEXT           "Loading Black Dragon - Black Kitty Fix...",666,36,13,211,8
+ END
+ 
+ 
+@@ -154,12 +154,12 @@ BEGIN
+         BLOCK "040904b0"
+         BEGIN
+             VALUE "CompanyName", ""
+-            VALUE "FileDescription", "Black Dragon"
++            VALUE "FileDescription", "Black Dragon - Black Kitty Fix 0.1.0 (Unofficial Preview)"
+             VALUE "FileVersion", "${VIEWER_VERSION_MAJOR}.${VIEWER_VERSION_MINOR}.${VIEWER_VERSION_PATCH}.${VIEWER_VERSION_REVISION}"
+             VALUE "InternalName", "Black Dragon"
+             VALUE "LegalCopyright", "Copyright (c) 2020, Linden Research, Inc."
+             VALUE "OriginalFilename", "BlackDragon.exe"
+-            VALUE "ProductName", "Second Life"
++            VALUE "ProductName", "Black Dragon 5.6.3 - Black Kitty Fix 0.1.0"
+             VALUE "ProductVersion", "${VIEWER_VERSION_MAJOR}.${VIEWER_VERSION_MINOR}.${VIEWER_VERSION_PATCH}.${VIEWER_VERSION_REVISION}"
+         END
+     END
+diff --git a/indra/newview/skins/default/xui/en/floater_big_preview.xml b/indra/newview/skins/default/xui/en/floater_big_preview.xml
+new file mode 100644
+index 0000000..362853d
+--- /dev/null
++++ b/indra/newview/skins/default/xui/en/floater_big_preview.xml
+@@ -0,0 +1,25 @@
++<?xml version="1.0" encoding="utf-8" standalone="yes"?>
++<floater
++  positioning="cascading"
++  can_close="true"
++  can_resize="true"
++  can_minimize="false"
++  help_topic="floater_big_preview"
++  layout="topleft"
++  name="floater_big_preview"
++  save_rect="true"
++  single_instance="true"
++  reuse_instance="true"
++  title="PREVIEW"
++  height="465"
++  width="770">
++  <panel
++   height="450"
++   width="750"
++   visible="true"
++   name="big_preview_placeholder"
++   top="5"
++   follows="all"
++   left="10">
++  </panel>
++</floater>
+diff --git a/indra/newview/skins/default/xui/en/strings.xml b/indra/newview/skins/default/xui/en/strings.xml
+index 58bf5c0..bb18799 100644
+--- a/indra/newview/skins/default/xui/en/strings.xml
++++ b/indra/newview/skins/default/xui/en/strings.xml
+@@ -7,7 +7,7 @@
+ 
+ 	<!-- Default Args - these arguments will be replaced in all strings -->
+ 	<string name="SECOND_LIFE">Second Life</string>
+-	<string name="APP_NAME">Black Dragon</string>
++	<string name="APP_NAME">Black Dragon - Black Kitty Fix 0.1.0</string>
+ 	<string name="CAPITALIZED_APP_NAME">BLACK DRAGON</string>
+ 	<string name="SECOND_LIFE_GRID">Second Life Grid</string>
+ 	<string name="SUPPORT_SITE">Second Life Support Portal</string>
+@@ -23,6 +23,8 @@
+ 	<string name="AboutHeader">
+ [CHANNEL] [VIEWER_VERSION_0].[VIEWER_VERSION_1].[VIEWER_VERSION_2].[VIEWER_VERSION_3] ([ADDRESS_SIZE]bit)
+ [VIEWER_VERSION_LOCAL] - [VIEWER_VERSION_IDENTIFIER]
++Black Kitty Fix: 0.1.0 (Unofficial Preview)
++Manual updates only. Separate settings and cache.
+ [https://niranv-sl.blogspot.com/p/these-are-listed-from-newest-to-oldest_5310.html Release Notes]
+ 	</string>
+     <string name="BuildConfig">Build Configuration [BUILD_CONFIG]</string>
+diff --git a/indra/newview/viewer_manifest.py b/indra/newview/viewer_manifest.py
+index 39e9b79..1f55d9a 100755
+--- a/indra/newview/viewer_manifest.py
++++ b/indra/newview/viewer_manifest.py
+@@ -84,6 +84,9 @@ class ViewerManifest(LLManifest):
+                 # ... and the entire image filters directory
+                 self.path("filters")
+ 
++                # Black Dragon camera presets are runtime resources.
++                self.path("camera")
++
+                 # ... and the included spell checking dictionaries
+                 pkgdir = os.path.join(self.args['build'], os.pardir, 'packages')
+                 with self.prefix(src=pkgdir):
+@@ -538,9 +541,10 @@ class Windows_x86_64_Manifest(ViewerManifest):
+                                                 '*.bat',
+                                                 '*.tar.xz')))
+ 
+-            with self.prefix(src=os.path.join(pkgdir, "VMP")):
+-                # include the compiled launcher scripts so that it gets included in the file_list
+-                self.path('BDVersionChecker.exe')
++            if self.args.get('portable', 'OFF') != 'ON':
++                with self.prefix(src=os.path.join(pkgdir, "VMP")):
++                    # Portable test builds launch directly, without an updater.
++                    self.path('BDVersionChecker.exe')
+ 
+             with self.prefix(dst="vmp_icons"):
+                 with self.prefix(src=self.icon_path()):
+@@ -574,7 +578,7 @@ class Windows_x86_64_Manifest(ViewerManifest):
+                 self.path("alut.dll")
+ 
+             # For textures
+-            self.path("openjpeg.dll")
++            self.path("openjp2.dll")
+ 
+             # These need to be installed as a SxS assembly, currently a 'private' assembly.
+             # See http://msdn.microsoft.com/en-us/library/ms235291(VS.80).aspx
+@@ -1350,6 +1354,7 @@ if __name__ == "__main__":
+            ' '.join((("'%s'" % arg) if ' ' in arg else arg) for arg in sys.argv))))
+     # fmodstudio and openal can be used simultaneously and controled by environment
+     extra_arguments = [
++        dict(name='portable', description='Omit the updater for a portable test build', default='OFF'),
+         dict(name='bugsplat', description="""BugSplat database to which to post crashes,
+              if BugSplat crash reporting is desired""", default='OFF'),
+         dict(name='fmodstudio', description="""Indication if fmod studio libraries are needed""", default='ON'),
